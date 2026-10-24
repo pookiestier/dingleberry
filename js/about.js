@@ -1,6 +1,6 @@
 /* About page: league intro and the lore article, which lives in data/about/lore.md so it
    can be edited without touching code. The Markdown subset: # title, ## chapter, ### sub,
-   paragraphs, "- " lists, **bold**, *italic*, "> TODO: ..." placeholders, and one
+   paragraphs, "- " lists, **bold**, *italic*, "> " quotes, and one
    ":::ledger Title" … ":::" box (holding a | table | and notes) shown as a sidebar on desktop. */
 (function () {
   const inline = (s) => esc(s)
@@ -41,7 +41,6 @@
         else if (lvl === 2) { const id = slug(txt); toc.push([id, txt]); sink().push(`<h3 class="lore-chapter" id="${id}">${inline(txt)}</h3>`); }
         else sink().push(`<h4>${inline(txt)}</h4>`);
       }
-      else if ((m = line.match(/^>\s*TODO:?\s*(.*)$/i))) { flushP(); flushL(); sink().push(`<div class="lore-todo"><span class="lore-todo-tag">📝 Commissioner to fill in</span>${inline(m[1].replace(/\s*\(Commissioner to fill in\.?\)\s*$/i, ""))}</div>`); }
       else if ((m = line.match(/^>\s?(.*)$/))) { flushP(); flushL(); sink().push(`<blockquote>${inline(m[1])}</blockquote>`); }
       else if ((m = line.match(/^[-*]\s+(.*)$/))) { flushP(); (list ||= []).push(m[1]); }
       else if (/^[—–]\s/.test(line)) { flushAll(); sink().push(`<p class="lore-sign">${inline(line)}</p>`); }
