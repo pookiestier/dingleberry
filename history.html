@@ -25,12 +25,23 @@
   <div class="card"><h2>All-Time Records <span class="pill">Regular season</span></h2><div class="table-wrap" id="alltime"><div class="loading">Loading…</div></div></div>
   <div class="card"><h2>Playoff Résumés</h2><div class="table-wrap" id="playoffs"><div class="loading">Loading…</div></div></div>
 </div>
+<h2 class="section-title">🏈 Playoff Brackets</h2>
+<div class="card bracket-card">
+  <div class="bracket-controls">
+    <label class="pick"><span class="muted small">Season</span><select class="select" id="bracket-season"></select></label>
+    <div class="tabs" id="bracket-kind"><button data-k="winners">Championship</button><button data-k="losers">Toilet Bowl</button></div>
+  </div>
+  <p class="bk-hint">Swipe sideways to see the whole bracket →</p>
+  <div id="bracket"><div class="loading">Loading brackets…</div></div>
+  <p class="note" id="bracket-note"></p>
+</div>
 <h2 class="section-title">📖 Record Book <span class="pill">Top 10</span></h2>
-<div class="grid grid-3" id="records"><div class="loading">Loading records…</div></div>
+<div class="card recbook" id="records"><div class="loading">Loading records…</div></div>
 <h2 class="section-title">Final Standings by Season</h2>
 <div class="card"><div class="tabs" id="season-tabs"></div><div class="table-wrap" id="season-table"><div class="loading">Loading…</div></div></div>
 </main>
 <script src="js/common.js"></script>
+<script src="js/league-history.js"></script>
 <script src="js/history.js"></script>
 </body>
 </html>

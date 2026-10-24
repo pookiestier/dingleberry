@@ -38,10 +38,12 @@ function avatarUrl(avatarId) {
 }
 
 /* A small "avatar + team name + owner" chip used everywhere */
-function teamChip(t, { lg = false, sub } = {}) {
+/* link: true links the team name to its Team History page */
+function teamChip(t, { lg = false, sub, link = false } = {}) {
+  const name = link ? `<a class="tlink" href="team-history.html?team=${t.rosterId}">${esc(t.teamName)}</a>` : esc(t.teamName);
   return `<div class="team">
     <img class="avatar ${lg ? "lg" : ""}" src="${avatarUrl(t.avatar)}" alt="" loading="lazy">
-    <div class="team-names"><span class="team-name">${esc(t.teamName)}</span>
+    <div class="team-names"><span class="team-name">${name}</span>
     <span class="owner">${sub ?? "@" + esc(t.owner)}</span></div></div>`;
 }
 
@@ -126,6 +128,7 @@ const NAV = [
   ["teams.html", "Teams"],
   ["power.html", "Power Rankings"],
   ["history.html", "History & Records"],
+  ["team-history.html", "Team History"],
   ["rules.html", "Constitution"],
   ["dynasty.html", "Rookie Draft & Dynasty"],
 ];

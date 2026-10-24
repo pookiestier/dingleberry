@@ -56,7 +56,7 @@ boot(async () => {
       const move = !prev ? "" : mv > 0 ? `<div class="pr-move up">▲ ${mv}</div>` : mv < 0 ? `<div class="pr-move down">▼ ${-mv}</div>` : `<div class="pr-move same">–</div>`;
       return `<div class="pr-row ${t.isMe ? "me" : ""}">
         <div><div class="pr-rank">${i + 1}</div>${move}</div>
-        <div>${teamChip(t)}</div>
+        <div>${teamChip(t, { link: true })}</div>
         <div class="num"><b>${recordStr(x.w, x.l, x.t)}</b></div>
         <div class="num">${recordStr(x.apW, x.apL, x.apT)}<div class="muted small">${pct(x.apPct)}</div></div>
         <div class="num hide-sm">${fmt(x.pf, 1)}</div>

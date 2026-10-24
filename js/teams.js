@@ -24,7 +24,7 @@ boot(async () => {
     }).join("");
     const extra = (label, ids) => ids.length ? `<div class="pos-group"><div class="pos-label">${label} · ${ids.length}</div>${ids.map((id) => playerRow(id, t)).join("")}</div>` : "";
     return `<div class="card roster-card" id="team-${t.rosterId}">
-      <div class="head">${teamChip(t, { lg: true })}
+      <div class="head">${teamChip(t, { lg: true, link: true })}
         <div class="rec"><b>${recordStr(t.wins, t.losses, t.ties)}</b><span class="muted small">${ord(i + 1)} · ${fmt(t.pf, 1)} PF</span></div></div>
       ${groups}${extra("Taxi squad", t.taxi)}${extra("Injured reserve", t.reserve)}
     </div>`;

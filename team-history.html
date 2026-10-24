@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="mud">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team History · Dingleberry League</title>
+<meta name="description" content="The Dingleberry League: a 10-team dynasty fantasy football league on Sleeper.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#1a0f07">
+<script src="js/theme.js"></script>
+</head>
+<body>
+<main>
+<h1 class="page-title">TEAM <span class="hl">HISTORY</span></h1>
+<p class="page-sub">Every franchise's full story since the 2022 startup: seasons, playoff runs, records, and head-to-head results. Built from the same Sleeper data as History &amp; Records.</p>
+<div class="th-picker"><label class="pick" for="team-pick"><span class="muted small">Franchise</span></label><select class="select" id="team-pick"><option>Loading…</option></select></div>
+<div class="card" id="th-header"><div class="loading">Loading team…</div></div>
+<div class="hero th-hero" id="th-hero"></div>
+<h2 class="section-title">📅 Season by Season</h2>
+<div class="card"><div class="table-wrap" id="th-seasons"><div class="loading">Loading…</div></div></div>
+<h2 class="section-title">📖 Team Record Book <span class="pill">Top 10</span></h2>
+<div class="card recbook" id="th-records"><div class="loading">Loading records…</div></div>
+<h2 class="section-title">⚔️ Head-to-Head</h2>
+<div class="card"><div class="table-wrap" id="th-h2h"><div class="loading">Loading…</div></div></div>
+</main>
+<script src="js/common.js"></script>
+<script src="js/league-history.js"></script>
+<script src="js/team-history.js"></script>
+</body>
+</html>

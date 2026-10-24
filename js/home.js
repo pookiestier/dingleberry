@@ -10,7 +10,7 @@ boot(async () => {
     <thead><tr><th></th><th>Team</th><th class="num">W-L</th><th class="num">PF</th><th class="num hide-xs">PA</th></tr></thead>
     <tbody>${standings.map((t, i) => `
       <tr class="${i === playoffTeams - 1 ? "playoff-line" : ""} ${t.isMe ? "me" : ""}">
-        <td class="rank">${i + 1}</td><td>${teamChip(t)}</td>
+        <td class="rank">${i + 1}</td><td>${teamChip(t, { link: true })}</td>
         <td class="num"><b>${recordStr(t.wins, t.losses, t.ties)}</b></td>
         <td class="num">${fmt(t.pf)}</td><td class="num hide-xs muted">${fmt(t.pa)}</td></tr>`).join("")}
     </tbody></table>
