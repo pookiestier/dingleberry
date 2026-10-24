@@ -9,7 +9,12 @@ const API = "https://api.sleeper.app/v1";
 const COMMISH_USERNAME = "rudedog12"; // highlighted as "you" in tables
 
 /* ---------- Fetch with a short sessionStorage cache ---------- */
-async function getJSON(url, { ttlMinutes = 5 } = {}) {
+const _inflight = new Map(); /* share one request when several loaders ask for the same URL at once */
+function getJSON(url, opts) {
+  if (!_inflight.has(url)) _inflight.set(url, _getJSON(url, opts).finally(() => _inflight.delete(url)));
+  return _inflight.get(url);
+}
+async function _getJSON(url, { ttlMinutes = 5 } = {}) {
   const key = "dbl:" + url;
   try {
     const hit = JSON.parse(sessionStorage.getItem(key) || "null");
@@ -38,9 +43,9 @@ function avatarUrl(avatarId) {
 }
 
 /* A small "avatar + team name + owner" chip used everywhere */
-/* link: true links the team name to its Team History page */
+/* link: true links the team name to its Team Info page */
 function teamChip(t, { lg = false, sub, link = false } = {}) {
-  const name = link ? `<a class="tlink" href="team-history.html?team=${t.rosterId}">${esc(t.teamName)}</a>` : esc(t.teamName);
+  const name = link ? `<a class="tlink" href="team-info.html?team=${t.rosterId}">${esc(t.teamName)}</a>` : esc(t.teamName);
   return `<div class="team">
     <img class="avatar ${lg ? "lg" : ""}" src="${avatarUrl(t.avatar)}" alt="" loading="lazy">
     <div class="team-names"><span class="team-name">${name}</span>
@@ -125,10 +130,10 @@ function slotPos(p) {
 /* ---------- Shared header / footer ---------- */
 const NAV = [
   ["index.html", "Home"],
-  ["teams.html", "Teams"],
+  ["team-info.html", "Team Info"],
+  ["schedule.html", "Schedule"],
   ["power.html", "Power Rankings"],
   ["history.html", "History"],
-  ["team-history.html", "Team History"],
   ["rules.html", "Constitution"],
   ["dynasty.html", "Dynasty"],
   ["about.html", "About"],

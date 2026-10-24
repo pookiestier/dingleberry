@@ -1,27 +1,22 @@
 <!doctype html>
-<html lang="en" data-theme="mud">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Teams · Dingleberry League</title>
-<meta name="description" content="The Dingleberry League: a 10-team dynasty fantasy football league on Sleeper.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<meta name="theme-color" content="#1a0f07">
-<script src="js/theme.js"></script>
+<title>Teams moved to Team Info · Dingleberry League</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="team-info.html">
+<script>
+  /* Teams merged into Team Info: keep ?team=N (and turn old #team-N anchors into ?team=N) */
+  (function () {
+    var q = location.search, m = location.hash.match(/^#team-(\d+)$/);
+    if (!q && m) q = "?team=" + m[1];
+    location.replace("team-info.html" + q + (m ? "" : location.hash));
+  })();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=team-info.html"></noscript>
 </head>
 <body>
-<main>
-<h1 class="page-title">THE <span class="hl">ROSTERS</span></h1>
-<p class="page-sub">All ten squads, grouped by position. <span class="star">★</span> = in this week's starting lineup.</p>
-<div class="grid grid-auto" id="teams"><div class="loading">Loading rosters…</div></div>
-</main>
-<script src="js/common.js"></script>
-<script src="js/teams.js"></script>
+<p>Teams now lives on <a href="team-info.html">Team Info</a>.</p>
 </body>
 </html>

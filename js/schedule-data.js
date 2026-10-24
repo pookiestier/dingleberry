@@ -1,0 +1,76 @@
+/* Shared schedule engine for the Schedule and Team Info pages.
+   Every week's games for every season:
+   - 2022–2025 from data/history.json (snapshot of Sleeper matchups + brackets)
+   - the current season live from Sleeper (/league/<id>/matchups/<week>, regular season only; playoff
+     pairings are only shown once the season's brackets are final, since Sleeper pre-fills placeholder ones)
+   Playoff weeks are built from the brackets, so every playoff / toilet-bowl game is labeled; a franchise is
+   its Sleeper roster slot (roster_id), which carries across seasons via previous_league_id. */
+const SCH_WINNER_LABEL = (m) => m.p === 1 ? "Championship" : m.p === 3 ? "3rd-place game" : m.p === 5 ? "5th-place game" : m.r === 1 ? "Playoffs · Round 1" : "Semifinal";
+const SCH_LOSER_LABEL = (m) => m.p === 1 ? "Toilet Bowl final" : m.p === 3 ? "Toilet Bowl · 7th-place game" : "Toilet Bowl · Round 1";
+const schTeamHref = (rid) => `team-info.html?team=${rid}`;
+const schName = (S, rid) => S.owners[rid]?.team || `Team ${S.owners[rid]?.name || "?"}`;
+
+function schGame(S, wk, a, b, ap, bp, extra = {}) {
+  const status = extra.status || "final";
+  let winner = null, tie = false;
+  if (status === "final") {
+    if (ap > bp) winner = a; else if (bp > ap) winner = b; else tie = true;
+  }
+  return { wk, a, b, ap, bp, status, winner, tie, kind: "reg", label: null, ...extra };
+}
+
+/* Build one season's schedule from rows of [roster_id, matchup_id, points] keyed by week */
+function schBuildPast(s) {
+  const W = s.playoff_week_start;
+  const userById = Object.fromEntries(s.users.map((u) => [u.user_id, u]));
+  const owners = Object.fromEntries(s.rosters.map((r) => { const u = userById[r.owner_id] || {}; return [r.roster_id, { name: u.display_name || "?", team: u.team_name, avatar: u.avatar }]; }));
+  const S = { season: s.season, W, owners, complete: true, weeks: [] };
+  const ptsOf = (wk, rid) => { const r = (s.matchups[wk] || []).find((x) => x[0] === rid); return r ? r[2] : null; };
+  for (let wk = 1; wk < W; wk++) {
+    const by = {};
+    for (const r of s.matchups[wk] || []) if (r[1] != null) (by[r[1]] ||= []).push(r);
+    const games = Object.values(by).filter((p) => p.length === 2).map(([x, y]) => schGame(S, wk, x[0], y[0], x[2], y[2]));
+    S.weeks.push({ wk, playoff: false, games, byes: [] });
+  }
+  for (let r = 1; r <= 3; r++) {
+    const wk = W + r - 1, games = [];
+    for (const m of s.winners_bracket || []) if (m.r === r && m.t1 != null && m.t2 != null)
+      games.push(schGame(S, wk, m.t1, m.t2, ptsOf(wk, m.t1), ptsOf(wk, m.t2), { kind: m.p === 1 || (m.p == null) ? "po" : "po-place", label: SCH_WINNER_LABEL(m), p: m.p }));
+    for (const m of s.losers_bracket || []) if (m.r === r && m.t1 != null && m.t2 != null)
+      games.push(schGame(S, wk, m.t1, m.t2, ptsOf(wk, m.t1), ptsOf(wk, m.t2), { kind: "tb", label: SCH_LOSER_LABEL(m), p: m.p }));
+    // Ties in bracket games are broken by Sleeper (winners bracket only)
+    for (const g of games) if (g.tie && g.kind !== "tb") { const m = s.winners_bracket.find((x) => x.r === r && [x.t1, x.t2].includes(g.a)); if (m?.w) { g.winner = m.w; g.tie = false; } }
+    const order = { "po": 0, "po-place": 1, "tb": 2 };
+    games.sort((x, y) => order[x.kind] - order[y.kind] || (x.p === 1 ? -1 : 0) - (y.p === 1 ? -1 : 0));
+    // Round-1 byes: teams that enter the winners bracket in round 2 without a feeder game
+    const byes = r === 1 ? (s.winners_bracket || []).filter((m) => m.r === 2 && m.p == null).flatMap((m) => [!m.t1_from ? m.t1 : null, !m.t2_from ? m.t2 : null]).filter((x) => x != null) : [];
+    S.weeks.push({ wk, playoff: true, round: r, games, byes });
+  }
+  return S;
+}
+
+async function loadSchedules() {
+  const [{ league, state, teams }, history] = await Promise.all([loadLeague(), loadHistory()]);
+  const W = league.settings.playoff_week_start || 15;
+  const regWeeks = Array.from({ length: W - 1 }, (_, i) => i + 1);
+  const rows = await Promise.all(regWeeks.map((w) => sleeper(`/league/${LEAGUE_ID}/matchups/${w}`)));
+  const inSeason = state.season === league.season && state.season_type === "regular";
+  const liveWeek = league.status === "complete" ? 99 : inSeason ? state.week : (state.season > league.season ? 99 : 0);
+  const owners = Object.fromEntries([...teams.values()].map((t) => [t.rosterId, { name: t.owner, team: t.teamName, avatar: t.avatar }]));
+  const S = { season: league.season, W, owners, complete: false, liveWeek, weeks: [] };
+  regWeeks.forEach((wk, i) => {
+    const status = wk < liveWeek ? "final" : wk === liveWeek ? "live" : "upcoming";
+    const games = pairUp(rows[i]).map(([x, y]) => schGame(S, wk, x.roster_id, y.roster_id, x.points || 0, y.points || 0, { status }));
+    S.weeks.push({ wk, playoff: false, games, byes: [], status });
+  });
+  for (let r = 1; r <= 3; r++) S.weeks.push({ wk: W + r - 1, playoff: true, round: r, games: [], byes: [], status: "upcoming", tbd: true });
+
+  const seasons = [S, ...history.seasons.map(schBuildPast)].sort((a, b) => b.season - a.season);
+  for (const x of seasons) for (const w of x.weeks) if (!w.status) w.status = "final";
+  // Default week to show: the live week during the season, otherwise the championship week
+  const currentWeek = inSeason ? Math.min(Math.max(1, state.week), W + 2) : W + 2;
+  return { league, state, teams, seasons, currentWeek };
+}
+
+const schRoundName = (w) => !w.playoff ? `Week ${w.wk}` : `Week ${w.wk} · ${["Playoffs Round 1", "Semifinals", "Championship"][w.round - 1]}`;
+const schStatusPill = (st) => st === "live" ? '<span class="pill live">Live</span>' : st === "upcoming" ? '<span class="pill">Upcoming</span>' : '<span class="pill final">Final</span>';

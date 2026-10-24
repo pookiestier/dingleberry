@@ -1,22 +1,87 @@
-/* Team History: one franchise (Sleeper roster slot) across every season.
+/* Team Info: one franchise (Sleeper roster slot), chosen from the dropdown. Shows its header and
+   all-time summary, current roster, schedule (any season, playoff and toilet-bowl games labeled),
+   season-by-season results, record book and head-to-head.
    A franchise keeps its roster_id when it changes hands, so a former manager's seasons count here,
    shown under the name that manager used that season ("now @x" marks the hand-off). */
+const POS_ORDER = ["QB", "RB", "WR", "TE", "K", "DL", "LB", "DB"];
+
 boot(async () => {
-  const ctx = await loadLeagueHistory();
+  const [ctx, sched, players] = await Promise.all([loadLeagueHistory(), loadSchedules(), loadPlayers()]);
   const { teams, seasons, scores } = ctx;
   const list = [...teams.values()].sort((a, b) => a.teamName.localeCompare(b.teamName, undefined, { sensitivity: "base" }));
   const sel = $("#team-pick");
   sel.innerHTML = list.map((t) => `<option value="${t.rosterId}">${esc(t.teamName)} · @${esc(t.owner)}</option>`).join("");
   const fromUrl = () => { const q = +new URLSearchParams(location.search).get("team"); return teams.has(q) ? q : (list.find((t) => t.isMe) || list[0]).rosterId; };
-  let rid = fromUrl();
-  sel.onchange = () => { rid = +sel.value; history.pushState(null, "", `?team=${rid}`); render(); };
-  window.onpopstate = () => { rid = fromUrl(); render(); };
+  const seasonFromUrl = () => { const q = new URLSearchParams(location.search).get("season"); return sched.seasons.some((x) => x.season === q) ? q : sched.seasons[0].season; };
+  let rid = fromUrl(), schedSeason = seasonFromUrl();
+  const sync = () => history.replaceState(null, "", `?team=${rid}${schedSeason !== sched.seasons[0].season ? `&season=${schedSeason}` : ""}`);
+  sel.onchange = () => { rid = +sel.value; history.pushState(null, "", `?team=${rid}${schedSeason !== sched.seasons[0].season ? `&season=${schedSeason}` : ""}`); render(); };
+  window.onpopstate = () => { rid = fromUrl(); schedSeason = seasonFromUrl(); render(); };
+  const sp = $("#sched-season");
+  sp.innerHTML = sched.seasons.map((x) => `<option value="${x.season}">${x.season}${x.complete ? "" : " (current)"}</option>`).join("");
+  sp.onchange = () => { schedSeason = sp.value; sync(); renderSchedule(); };
   render();
+
+  /* ---- Roster (current season, from the Sleeper rosters endpoint) ---- */
+  function renderRoster(t) {
+    const playerRow = (id) => {
+      const p = players[id];
+      const pos = slotPos(p);
+      const starter = t.starters.includes(id);
+      const inj = p && p.inj ? ` <span class="inj">${esc(p.inj.slice(0, 3).toUpperCase())}</span>` : "";
+      return `<div class="player ${starter ? "starter" : ""}"><span class="pos ${pos}">${pos}</span>
+        <span class="pname">${p ? esc(p.n) : "Player #" + esc(id)}${starter ? ' <span class="star">★</span>' : ""}${inj}</span>
+        <span class="team-abbr">${p && p.t ? p.t : "FA"}${p && p.a ? " · " + p.a : ""}</span></div>`;
+    };
+    const special = new Set([...t.taxi, ...t.reserve]);
+    const active = t.players.filter((id) => !special.has(id));
+    const group = (label, ids) => ids.length ? `<div class="pos-group"><div class="pos-label">${label} · ${ids.length}</div>${ids.map(playerRow).join("")}</div>` : "";
+    const groups = POS_ORDER.map((pos) => group(pos, active.filter((id) => slotPos(players[id]) === pos).sort((a, b) => t.starters.includes(b) - t.starters.includes(a)))).join("");
+    const place = ctx.standings.findIndex((x) => x.rosterId === t.rosterId) + 1;
+    $("#ti-roster").innerHTML = `<div class="ti-box-head"><h2>🏈 Roster <span class="pill">${t.players.length} players</span></h2>
+        <span class="muted small">${ctx.league.season}: ${recordStr(t.wins, t.losses, t.ties)} · ${ord(place)} · ${fmt(t.pf, 1)} PF</span></div>
+      <p class="muted small ti-legend"><span class="star">★</span> = in this week's starting lineup</p>
+      <div class="roster-card ti-roster">${groups}${group("Taxi squad", t.taxi)}${group("Injured reserve", t.reserve)}</div>`;
+  }
+
+  /* ---- Schedule for the selected season ---- */
+  function renderSchedule() {
+    sp.value = schedSeason;
+    const S = sched.seasons.find((x) => x.season === schedSeason);
+    const rowsOut = [];
+    let w = 0, l = 0, tie = 0, left = 0;
+    for (const wk of S.weeks) {
+      const g = wk.games.find((x) => x.a === rid || x.b === rid);
+      if (!g) {
+        if (wk.byes.includes(rid)) rowsOut.push(`<tr class="sched-po"><td class="num">${wk.wk}</td><td colspan="3"><span class="sched-tag po">Playoffs</span> <b>Bye</b> <span class="muted small">· top-2 seed skips round 1</span></td></tr>`);
+        else if (wk.tbd && wk.round === 1) rowsOut.push(`<tr class="sched-po"><td class="num">${wk.wk}–${wk.wk + 2}</td><td colspan="3" class="muted small"><span class="sched-tag po">Playoffs</span> Weeks ${wk.wk}–${wk.wk + 2}: top 6 make the playoffs, bottom 4 play the Toilet Bowl. Matchups are set after Week ${S.W - 1}.</td></tr>`);
+        continue;
+      }
+      const me = g.a === rid, o = me ? g.b : g.a, mp = me ? g.ap : g.bp, op = me ? g.bp : g.ap;
+      const res = g.status !== "final" ? "" : g.tie ? "T" : g.winner === rid ? "W" : "L";
+      if (!g.label) { if (res === "W") w++; else if (res === "L") l++; else if (res === "T") tie++; else left++; }
+      const tag = g.label ? `<span class="sched-tag ${g.kind === "tb" ? "tb" : "po"}">${esc(g.label)}</span>` : "";
+      const score = g.status === "upcoming" ? '<span class="muted small">Upcoming</span>'
+        : `<span class="${res === "W" ? "" : "muted"}"><b>${fmt(mp)}</b></span><span class="muted">–${fmt(op)}</span>${g.status === "live" ? ' <span class="pill live">Live</span>' : ""}`;
+      rowsOut.push(`<tr class="${g.label ? (g.kind === "tb" ? "sched-tb" : "sched-po") : ""}"><td class="num">${g.wk}</td>
+        <td>${tag}<div class="sched-opp"><img class="avatar" src="${avatarUrl(S.owners[o]?.avatar)}" alt="" loading="lazy"><div class="team-names">
+          <span class="team-name"><span class="muted small">vs</span> <a class="tlink" href="${schTeamHref(o)}">${esc(schName(S, o))}</a></span><span class="owner">@${esc(S.owners[o]?.name || "?")}</span></div></div></td>
+        <td class="num sched-score">${score}</td>
+        <td class="num">${res ? `<span class="res ${res}">${res}</span>` : ""}</td></tr>`);
+    }
+    const asName = schName(S, rid);
+    $("#ti-schedule-body").innerHTML = `<div class="muted small ti-sched-sum">${esc(asName)} · @${esc(S.owners[rid]?.name || "?")} · regular season ${recordStr(w, l, tie)}${left ? ` · ${left} to play` : ""}</div>
+      <div class="table-wrap"><table class="sched-table"><thead><tr><th class="num">Wk</th><th>Opponent</th><th class="num">Score</th><th class="num"></th></tr></thead>
+      <tbody>${rowsOut.join("")}</tbody></table></div>
+      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `Live from Sleeper. Week ${S.liveWeek} is in progress; later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team.</p>`;
+  }
 
   function render() {
     sel.value = rid;
     const t = teams.get(rid);
-    document.title = `${t.teamName} · Team History · Dingleberry League`;
+    document.title = `${t.teamName} · Team Info · Dingleberry League`;
+    renderRoster(t);
+    renderSchedule();
     const complete = seasons.filter((s) => s.complete);
 
     /* ---- Per-season facts ---- */

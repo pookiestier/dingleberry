@@ -1,4 +1,4 @@
-/* Shared league-history engine, used by History & Records and Team History.
+/* Shared league-history engine, used by History & Records and Team Info.
    - Past seasons come from data/history.json (scripts/snapshot.py); the current season is merged in live.
    - "Franchise" = Sleeper roster slot (roster_id). It carries over season to season even when a team
      changes hands, so a former manager's seasons count for the franchise. Names are shown as the
@@ -45,7 +45,7 @@ async function loadLeagueHistory() {
 }
 
 /* ---------- Small helpers ---------- */
-const teamHref = (rid) => `team-history.html?team=${rid}`;
+const teamHref = (rid) => `team-info.html?team=${rid}`;
 // Team name a franchise used in a given season (falls back like the live site does)
 const seasonTeam = (s, rid) => s.owners[rid]?.team || `Team ${s.owners[rid]?.name || "?"}`;
 // Manager that season, linked to the franchise page, plus "now @x" if the slot changed hands

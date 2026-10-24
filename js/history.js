@@ -1,4 +1,4 @@
-/* History & Record Book. Data loading, records and brackets live in js/league-history.js (shared with Team History). */
+/* History & Record Book. Data loading, records and brackets live in js/league-history.js (shared with Team Info). */
 boot(async () => {
   const ctx = await loadLeagueHistory();
   const { league, teams, seasons } = ctx;
