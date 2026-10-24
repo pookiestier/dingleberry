@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="mud">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>History & Records · Dingleberry League</title>
+<meta name="description" content="The Dingleberry League: a 10-team dynasty fantasy football league on Sleeper.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#1a0f07">
+<script src="js/theme.js"></script>
+</head>
+<body>
+<main>
+<h1 class="page-title">HISTORY &amp; <span class="hl">RECORD BOOK</span></h1>
+<p class="page-sub">Every season since the 2022 startup draft. Records are calculated from real Sleeper matchup data, and the current season updates live.</p>
+<h2 class="section-title">🏆 Trophy Case</h2>
+<div class="trophy-case" id="trophies"><div class="loading">Loading history…</div></div>
+<div class="grid grid-2" style="margin-top:18px">
+  <div class="card"><h2>All-Time Records <span class="pill">Regular season</span></h2><div class="table-wrap" id="alltime"><div class="loading">Loading…</div></div></div>
+  <div class="card"><h2>Playoff Résumés</h2><div class="table-wrap" id="playoffs"><div class="loading">Loading…</div></div></div>
+</div>
+<h2 class="section-title">📖 Record Book <span class="pill">Top 10</span></h2>
+<div class="grid grid-3" id="records"><div class="loading">Loading records…</div></div>
+<h2 class="section-title">Final Standings by Season</h2>
+<div class="card"><div class="tabs" id="season-tabs"></div><div class="table-wrap" id="season-table"><div class="loading">Loading…</div></div></div>
+</main>
+<script src="js/common.js"></script>
+<script src="js/history.js"></script>
+</body>
+</html>

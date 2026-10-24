@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="mud">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home · Dingleberry League</title>
+<meta name="description" content="The Dingleberry League: a 10-team dynasty fantasy football league on Sleeper.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#1a0f07">
+<script src="js/theme.js"></script>
+</head>
+<body>
+<main>
+<section class="home-hero">
+  <img class="hero-logo" src="assets/logo-hero.png" alt="Dingleberry Fantasy Football League shield logo" width="190" height="198">
+  <div class="hero-copy">
+    <div class="eyebrow">Dingleberry Fantasy Football League<span class="est"> · Est. 2022</span></div>
+    <h1 class="page-title">WEEK <span class="hl" id="week-no">–</span> IN THE BERRY PATCH</h1>
+    <p class="page-sub" id="home-sub">Live standings, scores and moves, straight from Sleeper.</p>
+  </div>
+</section>
+<section class="hero" id="hero"><div class="loading">Loading…</div></section>
+<div class="grid grid-2">
+  <div class="card"><h2>Standings <span class="pill">Top 6 make playoffs</span></h2><div class="table-wrap" id="standings"><div class="loading">Loading standings…</div></div></div>
+  <div class="card"><h2>This Week <span class="pill live">Live</span></h2><div class="matchups" id="matchups"><div class="loading">Loading matchups…</div></div></div>
+</div>
+<div class="card" style="margin-top:18px"><h2>Recent Moves <span class="pill">Last 2 weeks</span></h2><div id="transactions"><div class="loading">Loading transactions…</div></div></div>
+</main>
+<script src="js/common.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

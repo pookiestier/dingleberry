@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-theme="mud">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rookie Draft & Dynasty · Dingleberry League</title>
+<meta name="description" content="The Dingleberry League: a 10-team dynasty fantasy football league on Sleeper.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#1a0f07">
+<script src="js/theme.js"></script>
+</head>
+<body>
+<main>
+<h1 class="page-title">ROOKIE DRAFT &amp; <span class="hl">DYNASTY</span></h1>
+<p class="page-sub">Who owns which picks, the projected 2027 rookie draft order, and how every roster stacks up in dynasty value.</p>
+<div class="grid grid-2">
+  <div class="card"><h2>Projected 2027 Draft Order <span class="pill">Projection</span></h2><div class="table-wrap" id="draft-order"><div class="loading">Loading…</div></div>
+    <p class="note">Per §1.3: picks 1–4 go to the non-playoff teams in reverse regular-season order, and picks 5–10 go to the six playoff teams based on final playoff results. This projection uses current standings, with seeds 1–6 placed in reverse seed order until the playoffs are played.</p></div>
+  <div class="card"><h2>Dynasty Value <span class="pill">FantasyCalc</span></h2><div class="table-wrap" id="values"><div class="loading">Loading values…</div></div>
+    <p class="note" id="values-note"></p></div>
+</div>
+<div class="card" style="margin-top:18px"><h2>Future Pick Ownership <span class="pill">4 rounds / year</span></h2><div class="table-wrap" id="picks"><div class="loading">Loading picks…</div></div>
+  <p class="note">Highlighted chips are picks acquired by trade. The name in parentheses is the team the pick originally belonged to. Built from Sleeper's <code>traded_picks</code> applied to each team's default picks.</p></div>
+<div class="card" style="margin-top:18px"><h2>Past Rookie Drafts</h2><div id="drafts"><div class="loading">Loading drafts…</div></div></div>
+</main>
+<script src="js/common.js"></script>
+<script src="js/dynasty.js"></script>
+</body>
+</html>

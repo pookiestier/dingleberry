@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-theme="mud">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fumble! Page not found · Dingleberry League</title>
+<meta name="robots" content="noindex">
+<script>
+  /* GitHub Pages serves this file for missing URLs at any depth. On a project
+     site (user.github.io/<repo>/...) point relative links at the repo root. */
+  (function () {
+    if (/\.github\.io$/.test(location.hostname)) {
+      var seg = location.pathname.split("/")[1];
+      var b = document.createElement("base");
+      b.href = location.origin + "/" + (seg && seg.indexOf(".") < 0 ? seg + "/" : "");
+      document.head.appendChild(b);
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#1a0f07">
+<style>
+  .lost { max-width: 640px; margin: 7vh auto 0; text-align: center; padding: 34px 24px 30px; }
+  .lost img { width: 170px; height: auto; filter: drop-shadow(0 10px 24px rgba(0,0,0,.6)); }
+  .lost .code { font: 120px/0.9 var(--display); letter-spacing: 3px; margin: 14px 0 0;
+    background: var(--hl-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .lost .page-title { font-size: 44px; margin: 6px 0 10px; }
+  .lost p { color: var(--muted); margin: 0 auto 22px; max-width: 460px; }
+  .lost .btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .lost .btns a { padding: 10px 16px; border-radius: 999px; font-weight: 700; font-size: 14px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); }
+  .lost .btns a.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .lost .btns a:hover { text-decoration: none; filter: brightness(1.08); }
+</style>
+</head>
+<body>
+<main>
+  <div class="card lost">
+    <a href="index.html"><img src="assets/logo-hero.png" alt="Dingleberry Fantasy Football League logo" width="170" height="176"></a>
+    <div class="code">404</div>
+    <h1 class="page-title">FUMBLE! <span class="hl">BALL'S LOOSE</span></h1>
+    <p>That page got stuck in the mud. It may have moved, or the link has a typo. Pick a route back to the field:</p>
+    <div class="btns">
+      <a class="primary" href="index.html">Home</a>
+      <a href="power.html">Power Rankings</a>
+      <a href="history.html">Record Book</a>
+      <a href="rules.html">Constitution</a>
+    </div>
+  </div>
+</main>
+</body>
+</html>
