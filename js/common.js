@@ -127,10 +127,11 @@ const NAV = [
   ["index.html", "Home"],
   ["teams.html", "Teams"],
   ["power.html", "Power Rankings"],
-  ["history.html", "History & Records"],
+  ["history.html", "History"],
   ["team-history.html", "Team History"],
   ["rules.html", "Constitution"],
-  ["dynasty.html", "Rookie Draft & Dynasty"],
+  ["dynasty.html", "Dynasty"],
+  ["about.html", "About"],
 ];
 function renderChrome() {
   const here = location.pathname.split("/").pop() || "index.html";
