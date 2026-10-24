@@ -48,7 +48,6 @@ boot(async () => {
   const prevRank = prev ? Object.fromEntries(prev.map((x, i) => [x.id, i + 1])) : {};
 
   $("#pr-sub").textContent = `Through Week ${done} of the ${league.season} season. Updates automatically every week.`;
-  $("#recap-week").textContent = `Week ${done}`;
   const top = now[0].power;
   $("#power").innerHTML = `<div class="pr-row header"><span>Rank</span><span>Team</span><span class="num">Record</span><span class="num">All-play</span><span class="num hide-sm">PF</span><span class="num hide-sm">Last 3 avg</span><span class="hide-sm">Power score</span></div>` +
     now.map((x, i) => {

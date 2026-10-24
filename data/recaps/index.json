@@ -1,0 +1,6 @@
+{
+  "_howto": "Add a recap: save data/recaps/<season>-weekNN.md (Markdown: # headline, ## sections, - lists, **bold**, *italic*) and add an entry at the TOP of this list (newest first). Then run scripts/publish.sh.",
+  "recaps": [
+    { "season": "2026", "week": 6, "title": "The Drake Maye Rescue Mission Has Officially Left the Launchpad", "file": "2026-week06.md" }
+  ]
+}

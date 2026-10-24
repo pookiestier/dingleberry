@@ -224,6 +224,31 @@ tr.me td { background: rgba(var(--accent-rgb),.07); }
   letter-spacing: .6px; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; margin-bottom: 8px;
 }
 
+/* ---------- Commissioner's recaps (data/recaps/*.md) ---------- */
+.recap-archive { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: -4px 0 14px; }
+.recap-archive label { font: 600 11px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+.recap-archive select {
+  background: var(--card-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font: 600 13px var(--body); max-width: 100%;
+}
+.recap-body { max-width: 760px; line-height: 1.6; }
+.recap-body .recap-headline {
+  font: 34px/1.05 var(--display); letter-spacing: 1px; margin: 0 0 12px;
+  background: var(--hl-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.6));
+}
+.recap-body .recap-h {
+  font: 21px/1.1 var(--display); letter-spacing: 1px; color: var(--accent);
+  margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line-soft);
+}
+.recap-body p { margin: 0 0 10px; }
+.recap-body ul { margin: 0 0 10px; padding-left: 20px; }
+.recap-body li { margin: 0 0 6px; }
+.recap-body li::marker { color: var(--accent); }
+.recap-body strong { color: var(--gold); }
+.recap-body .recap-sign { margin-top: 18px; color: var(--muted); font-style: italic; }
+@media (max-width: 640px) { .recap-body .recap-headline { font-size: 28px; } }
+
 /* ---------- History ---------- */
 .trophy-case { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .season-card { position: relative; overflow: hidden; }
