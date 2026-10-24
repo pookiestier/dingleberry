@@ -67,10 +67,89 @@ async function loadSchedules() {
 
   const seasons = [S, ...history.seasons.map(schBuildPast)].sort((a, b) => b.season - a.season);
   for (const x of seasons) for (const w of x.weeks) if (!w.status) w.status = "final";
+
+  /* ---- Special weeks: Rematch Week (1), Trade Deadline (settings.trade_deadline), Rivalry Week ---- */
+  const cfg = await local("data/rivalries.json").catch(() => ({ week: 12, rivalries: [] }));
+  const pastLeagues = await Promise.all(history.seasons.map((h) => sleeper(`/league/${h.league_id}`, { ttlMinutes: 720 }).catch(() => null)));
+  const tdBySeason = { [league.season]: league.settings.trade_deadline };
+  history.seasons.forEach((h, i) => { tdBySeason[h.season] = pastLeagues[i]?.settings?.trade_deadline; });
+  const ridByOwner = Object.fromEntries(Object.entries(owners).map(([rid, o]) => [o.name.toLowerCase(), +rid]));
+  const rivalries = (cfg.rivalries || []).map((r) => ({ name: r.name, rids: r.owners.map((u) => ridByOwner[String(u).toLowerCase()]) })).filter((r) => r.rids.every((x) => x != null));
+  const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
+  const rivalByPair = Object.fromEntries(rivalries.map((r) => [pairKey(...r.rids), r]));
+  // Every game ever, oldest first (regular season, playoffs, placement games and Toilet Bowl)
+  const asc = [...seasons].sort((a, b) => a.season - b.season);
+  const all = asc.flatMap((x) => x.weeks.flatMap((w) => w.games.map((g) => ({ g, S: x }))));
+  const h2h = (a, b) => {
+    const r = { aw: 0, bw: 0, t: 0, n: 0 };
+    for (const { g } of all) if (g.status === "final" && pairKey(g.a, g.b) === pairKey(a, b)) {
+      r.n++; if (g.tie) r.t++; else if (g.winner === a) r.aw++; else r.bw++;
+    }
+    return r;
+  };
+  for (const x of asc) {
+    const td = tdBySeason[x.season] || 11;
+    x.tradeDeadline = td;
+    // Week 1: most recent previous meeting for every pairing
+    const w1 = x.weeks.find((w) => w.wk === 1);
+    for (const g of w1.games) {
+      let last = null;
+      for (const e of all) { if (e.S.season >= x.season) break; if (e.g.status === "final" && pairKey(e.g.a, e.g.b) === pairKey(g.a, g.b)) last = e; }
+      g.lastMeet = last ? { season: last.S.season, wk: last.g.wk, label: last.g.label, S: last.S, g: last.g } : null;
+    }
+    // Rematch Week = every Week 1 game repeats both teams' final game of the previous season
+    const prev = asc.find((p) => +p.season === +x.season - 1);
+    let rematch = false;
+    if (prev && w1.games.length) {
+      const lastOpp = {};
+      for (const w of prev.weeks) for (const g of w.games) { lastOpp[g.a] = { o: g.b, g, w }; lastOpp[g.b] = { o: g.a, g, w }; }
+      rematch = w1.games.every((g) => lastOpp[g.a]?.o === g.b && lastOpp[g.b]?.o === g.a);
+      if (rematch) for (const g of w1.games) g.rematchOf = lastOpp[g.a].g;
+    }
+    x.rematch = rematch;
+    // Rivalry games in the configured week (matched by roster slot)
+    const rw = x.weeks.find((w) => w.wk === (cfg.week || 12));
+    let nRiv = 0;
+    for (const g of rw?.games || []) {
+      const r = rivalByPair[pairKey(g.a, g.b)];
+      if (r) { nRiv++; const rec = h2h(g.a, g.b); g.rivalry = { name: r.name, rec }; }
+    }
+    x.rivalryCount = nRiv;
+    for (const w of x.weeks) {
+      w.special = [];
+      if (w.wk === 1 && rematch) w.special.push({ type: "rematch", tag: "Rematch Week" });
+      if (w.wk === td) w.special.push({ type: "deadline", tag: "Trade Deadline" });
+      if (w === rw && nRiv) w.special.push({ type: "rivalry", tag: "Rivalry Week", count: nRiv, of: rivalries.length });
+    }
+  }
   // Default week to show: the live week during the season, otherwise the championship week
   const currentWeek = inSeason ? Math.min(Math.max(1, state.week), W + 2) : W + 2;
-  return { league, state, teams, seasons, currentWeek };
+  return { league, state, teams, seasons, currentWeek, rivalries, rivalryWeek: cfg.week || 12 };
 }
 
 const schRoundName = (w) => !w.playoff ? `Week ${w.wk}` : `Week ${w.wk} · ${["Playoffs Round 1", "Semifinals", "Championship"][w.round - 1]}`;
 const schStatusPill = (st) => st === "live" ? '<span class="pill live">Live</span>' : st === "upcoming" ? '<span class="pill">Upcoming</span>' : '<span class="pill final">Final</span>';
+
+/* Special-week helpers shared by the Schedule and Team Info pages */
+const SCH_SPECIAL_ICON = { rematch: "🔁", deadline: "🔒", rivalry: "⚔️" };
+const schSpecialTags = (w) => (w.special || []).map((x) => `<span class="sp-tag ${x.type}">${SCH_SPECIAL_ICON[x.type]} ${x.tag}</span>`).join("");
+const schSpecialClass = (w) => (w.special || []).map((x) => `sp-${x.type}`).join(" ");
+function schSpecialBanners(S, w, state) {
+  return (w.special || []).map((x) => {
+    let title = x.tag, text = "";
+    if (x.type === "rematch") text = `Every Week ${w.wk} matchup replays both teams' final game of ${+S.season - 1} (playoffs, placement games and Toilet Bowl included). Each card shows how that last meeting went.`;
+    if (x.type === "deadline") {
+      text = `Trades lock after Week ${S.tradeDeadline}.`;
+      if (!S.complete && state && state.season === S.season && state.season_type === "regular") {
+        const n = S.tradeDeadline - state.week;
+        if (n > 0) text += ` That's ${n} week${n === 1 ? "" : "s"} from now (current week: ${state.week}).`;
+        else if (n === 0) text += " That's this week: get deals done.";
+        else text += " The deadline has passed.";
+      }
+    }
+    if (x.type === "rivalry") text = x.count === x.of ? `All ${x.of} league rivalries square off this week. Card titles show the rivalry and the franchises' all-time head-to-head.` : `${x.count} of the ${x.of} league rivalries met this week (rivalries are matched by franchise). Rivalry cards show the all-time head-to-head.`;
+    return `<div class="sp-banner ${x.type}"><span class="sp-ico">${SCH_SPECIAL_ICON[x.type]}</span><div><b>${title}</b><span>${text}</span></div></div>`;
+  }).join("");
+}
+/* "A 6–3 B" style all-time series text, from side a's point of view */
+const schSeries = (rec, aName, bName) => !rec.n ? "First-ever meeting" : rec.aw === rec.bw ? `All-time series tied ${rec.aw}–${rec.bw}${rec.t ? `–${rec.t}` : ""}` : `All-time: ${esc(rec.aw > rec.bw ? aName : bName)} leads ${Math.max(rec.aw, rec.bw)}–${Math.min(rec.aw, rec.bw)}${rec.t ? `–${rec.t}` : ""}`;

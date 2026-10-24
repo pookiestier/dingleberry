@@ -41,6 +41,14 @@ boot(async () => {
     <div class="stat"><div class="k">Points-for leader</div><div class="v">${fmt(pfLeader.pf, 1)}</div><div class="s">${esc(pfLeader.teamName)}</div></div>
     <div class="stat"><div class="k">Season-high week</div><div class="v">${high ? fmt(high.points) : "–"}</div><div class="s">${high ? `${esc(teams.get(high.roster_id).teamName)} · Wk ${high.week}` : ""}</div></div>
     <div class="stat"><div class="k">Commish's squad</div><div class="v">${me ? ord(standings.indexOf(me) + 1) : "–"}</div><div class="s">${me ? `${esc(me.teamName)} (${recordStr(me.wins, me.losses, me.ties)})` : ""}</div></div>`;
+  /* ---- Trade deadline countdown (Sleeper settings.trade_deadline vs the current NFL week; hidden once it passes) ---- */
+  const td = league.settings.trade_deadline || 11;
+  if (state.season === league.season && state.season_type === "regular" && state.week <= td) {
+    const n = td - state.week, chip = $("#deadline-chip");
+    chip.innerHTML = `<span class="dl-ico">🔒</span><span><b>${n === 0 ? "Trade deadline is this week" : `Trade deadline in ${n} week${n === 1 ? "" : "s"}`}</b> · trades lock after Week ${td}</span>`;
+    chip.href = `schedule.html?season=${league.season}&week=${td}`;
+    chip.hidden = false;
+  }
   $("#home-sub").textContent = `${league.season} season · ${league.total_rosters} teams · trade deadline Week ${league.settings.trade_deadline} · playoffs start Week ${league.settings.playoff_week_start}`;
 
   /* ---- Recent transactions (this week + last week) ---- */

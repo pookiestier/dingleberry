@@ -60,12 +60,17 @@ boot(async () => {
       const me = g.a === rid, o = me ? g.b : g.a, mp = me ? g.ap : g.bp, op = me ? g.bp : g.ap;
       const res = g.status !== "final" ? "" : g.tie ? "T" : g.winner === rid ? "W" : "L";
       if (!g.label) { if (res === "W") w++; else if (res === "L") l++; else if (res === "T") tie++; else left++; }
-      const tag = g.label ? `<span class="sched-tag ${g.kind === "tb" ? "tb" : "po"}">${esc(g.label)}</span>` : "";
+      let tag = g.label ? `<span class="sched-tag ${g.kind === "tb" ? "tb" : "po"}">${esc(g.label)}</span>` : "";
+      for (const x of wk.special || []) if (x.type !== "rivalry") tag += `<span class="sp-tag ${x.type}">${SCH_SPECIAL_ICON[x.type]} ${x.tag}</span>`;
+      if (g.rivalry) tag += `<span class="sp-tag rivalry">⚔️ Rivalry Week</span>`;
+      const extra = g.rivalry ? `<div class="sched-rival">⚔️ <b>${esc(g.rivalry.name)}</b> · <span class="muted">${schSeries(me ? g.rivalry.rec : { ...g.rivalry.rec, aw: g.rivalry.rec.bw, bw: g.rivalry.rec.aw }, schName(S, rid), schName(S, o))}</span></div>`
+        : g.rematchOf ? `<div class="sched-rival muted small">Rematch of ${+S.season - 1} Wk ${g.rematchOf.wk}${g.rematchOf.label ? ` (${esc(g.rematchOf.label)})` : ""}: ${fmt(g.rematchOf.a === rid ? g.rematchOf.ap : g.rematchOf.bp)}–${fmt(g.rematchOf.a === rid ? g.rematchOf.bp : g.rematchOf.ap)} ${g.rematchOf.tie ? "T" : g.rematchOf.winner === rid ? "W" : "L"}</div>` : "";
+      const spCls = [...(wk.special || []).filter((x) => x.type !== "rivalry").map((x) => `sp-${x.type}`), g.rivalry ? "sp-rivalry" : ""].join(" ");
       const score = g.status === "upcoming" ? '<span class="muted small">Upcoming</span>'
         : `<span class="${res === "W" ? "" : "muted"}"><b>${fmt(mp)}</b></span><span class="muted">–${fmt(op)}</span>${g.status === "live" ? ' <span class="pill live">Live</span>' : ""}`;
-      rowsOut.push(`<tr class="${g.label ? (g.kind === "tb" ? "sched-tb" : "sched-po") : ""}"><td class="num">${g.wk}</td>
-        <td>${tag}<div class="sched-opp"><img class="avatar" src="${avatarUrl(S.owners[o]?.avatar)}" alt="" loading="lazy"><div class="team-names">
-          <span class="team-name"><span class="muted small">vs</span> <a class="tlink" href="${schTeamHref(o)}">${esc(schName(S, o))}</a></span><span class="owner">@${esc(S.owners[o]?.name || "?")}</span></div></div></td>
+      rowsOut.push(`<tr class="${g.label ? (g.kind === "tb" ? "sched-tb" : "sched-po") : ""} ${spCls}"><td class="num">${g.wk}</td>
+        <td>${tag ? `<div class="sched-tags">${tag}</div>` : ""}<div class="sched-opp"><img class="avatar" src="${avatarUrl(S.owners[o]?.avatar)}" alt="" loading="lazy"><div class="team-names">
+          <span class="team-name"><span class="muted small">vs</span> <a class="tlink" href="${schTeamHref(o)}">${esc(schName(S, o))}</a></span><span class="owner">@${esc(S.owners[o]?.name || "?")}</span>${extra}</div></div></td>
         <td class="num sched-score">${score}</td>
         <td class="num">${res ? `<span class="res ${res}">${res}</span>` : ""}</td></tr>`);
     }
@@ -73,7 +78,7 @@ boot(async () => {
     $("#ti-schedule-body").innerHTML = `<div class="muted small ti-sched-sum">${esc(asName)} · @${esc(S.owners[rid]?.name || "?")} · regular season ${recordStr(w, l, tie)}${left ? ` · ${left} to play` : ""}</div>
       <div class="table-wrap"><table class="sched-table"><thead><tr><th class="num">Wk</th><th>Opponent</th><th class="num">Score</th><th class="num"></th></tr></thead>
       <tbody>${rowsOut.join("")}</tbody></table></div>
-      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `Live from Sleeper. Week ${S.liveWeek} is in progress; later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team.</p>`;
+      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `Live from Sleeper. Week ${S.liveWeek} is in progress; later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team. 🔒 Trades lock after Week ${S.tradeDeadline}.${S.rematch ? ` 🔁 Week 1 replays each team's final ${+S.season - 1} game.` : ""} ⚔️ Rivalry head-to-head counts every game between the two franchises, including playoff, placement and Toilet Bowl games.</p>`;
   }
 
   function render() {

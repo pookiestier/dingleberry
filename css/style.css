@@ -546,6 +546,57 @@ tr.sched-tb td { background: rgba(255, 122, 92, .06); }
   .sc-pts { font-size: 24px; }
 }
 
+/* ---------- Special weeks (Rematch / Trade Deadline / Rivalry) ---------- */
+:root { --sp-rematch: var(--gold); --sp-rematch-rgb: 230, 196, 135; --sp-deadline: #6fb544; --sp-deadline-rgb: 111, 181, 68; --sp-rivalry: #e2553f; --sp-rivalry-rgb: 226, 85, 63; }
+.sp-tag { display: inline-flex; align-items: center; gap: 4px; font: 700 10px/1 var(--body); letter-spacing: .5px; text-transform: uppercase; padding: 4px 6px; border-radius: 5px; white-space: nowrap; border: 1px solid; }
+.sp-tag.rematch { color: var(--sp-rematch); background: rgba(var(--sp-rematch-rgb), .14); border-color: rgba(var(--sp-rematch-rgb), .45); }
+.sp-tag.deadline { color: var(--sp-deadline); background: rgba(var(--sp-deadline-rgb), .14); border-color: rgba(var(--sp-deadline-rgb), .45); }
+.sp-tag.rivalry { color: var(--sp-rivalry); background: rgba(var(--sp-rivalry-rgb), .14); border-color: rgba(var(--sp-rivalry-rgb), .45); }
+.sp-banner { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid; margin: 0 0 12px; }
+.sp-banner .sp-ico { font-size: 26px; line-height: 1; flex: none; }
+.sp-banner b { display: block; font: 26px/1 var(--display); letter-spacing: 1px; margin-bottom: 4px; }
+.sp-banner span { font-size: 13.5px; color: var(--text); }
+.sp-banner.rematch { border-color: rgba(var(--sp-rematch-rgb), .7); background: linear-gradient(90deg, rgba(var(--sp-rematch-rgb), .2), rgba(var(--sp-rematch-rgb), .04)); }
+.sp-banner.rematch b { color: var(--sp-rematch); }
+.sp-banner.deadline { border-color: rgba(var(--sp-deadline-rgb), .7); background: linear-gradient(90deg, rgba(var(--sp-deadline-rgb), .2), rgba(var(--sp-deadline-rgb), .04)); }
+.sp-banner.deadline b { color: var(--sp-deadline); }
+.sp-banner.rivalry { border-color: rgba(var(--sp-rivalry-rgb), .7); background: linear-gradient(90deg, rgba(var(--sp-rivalry-rgb), .22), rgba(var(--sp-rivalry-rgb), .04)); }
+.sp-banner.rivalry b { color: var(--sp-rivalry); }
+.sched-tag.rival { background: rgba(var(--sp-rivalry-rgb), .18); color: var(--sp-rivalry); white-space: normal; text-align: left; line-height: 1.2; }
+.sched-tag.rematch { background: rgba(var(--sp-rematch-rgb), .18); color: var(--sp-rematch); }
+.sc-rival { border-color: rgba(var(--sp-rivalry-rgb), .6); box-shadow: inset 3px 0 0 var(--sp-rivalry); }
+.sc-rematch { border-color: rgba(var(--sp-rematch-rgb), .5); box-shadow: inset 3px 0 0 var(--sp-rematch); }
+.sc-h2h { font-size: 12.5px; font-weight: 700; color: var(--text); margin: 2px 0 2px; }
+.sc-last { margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--muted); line-height: 1.45; }
+.sc-last b { color: var(--sp-rematch); font-weight: 700; }
+.sc-last .win { color: var(--text); font-weight: 700; }
+.sg-tags { display: flex; gap: 4px; flex-wrap: wrap; margin: -2px 0 6px; }
+.sg-week.sp-rematch { background: linear-gradient(180deg, rgba(var(--sp-rematch-rgb), .12), var(--card)); border-color: rgba(var(--sp-rematch-rgb), .5); }
+.sg-week.sp-deadline { background: linear-gradient(180deg, rgba(var(--sp-deadline-rgb), .12), var(--card)); border-color: rgba(var(--sp-deadline-rgb), .5); }
+.sg-week.sp-rivalry { background: linear-gradient(180deg, rgba(var(--sp-rivalry-rgb), .12), var(--card)); border-color: rgba(var(--sp-rivalry-rgb), .5); }
+.sg-week.on { border-color: var(--accent); }
+.sg-g.rival .sg-lab { color: var(--sp-rivalry); }
+.sched-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+.sched-tags .sched-tag { margin-bottom: 0; }
+tr.sp-rematch td { background: rgba(var(--sp-rematch-rgb), .08); }
+tr.sp-deadline td { background: rgba(var(--sp-deadline-rgb), .08); }
+tr.sp-rivalry td { background: rgba(var(--sp-rivalry-rgb), .08); }
+tr.sp-rivalry td:first-child, tr.sp-deadline td:first-child, tr.sp-rematch td:first-child { box-shadow: inset 3px 0 0 currentColor; }
+tr.sp-rematch td:first-child { color: var(--sp-rematch); } tr.sp-deadline td:first-child { color: var(--sp-deadline); } tr.sp-rivalry td:first-child { color: var(--sp-rivalry); }
+.sched-rival { font-size: 12px; margin-top: 2px; white-space: normal; }
+.sched-rival b { color: var(--sp-rivalry); }
+.deadline-chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-size: 13.5px; color: var(--text); text-decoration: none;
+  border: 1px solid rgba(var(--sp-deadline-rgb), .6); background: rgba(var(--sp-deadline-rgb), .14); }
+.deadline-chip b { color: var(--sp-deadline); }
+.deadline-chip:hover { border-color: var(--sp-deadline); }
+.deadline-chip[hidden] { display: none; }
+@media (max-width: 640px) {
+  .sp-banner { padding: 12px; gap: 10px; align-items: flex-start; }
+  .sp-banner b { font-size: 22px; }
+  .sp-banner span { font-size: 13px; }
+  .deadline-chip { font-size: 12.5px; }
+}
+
 /* ---------- Rules (constitution) ---------- */
 .rules-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
 .toc { position: sticky; top: 90px; font-size: 13.5px; }
