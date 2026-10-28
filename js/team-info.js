@@ -78,7 +78,7 @@ boot(async () => {
     $("#ti-schedule-body").innerHTML = `<div class="muted small ti-sched-sum">${esc(asName)} · @${esc(S.owners[rid]?.name || "?")} · regular season ${recordStr(w, l, tie)}${left ? ` · ${left} to play` : ""}</div>
       <div class="table-wrap"><table class="sched-table"><thead><tr><th class="num">Wk</th><th>Opponent</th><th class="num">Score</th><th class="num"></th></tr></thead>
       <tbody>${rowsOut.join("")}</tbody></table></div>
-      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `Live from Sleeper. Week ${S.liveWeek} is in progress; later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team. 🔒 Trades lock after Week ${S.tradeDeadline}.${S.rematch ? ` 🔁 Week 1 replays each team's final ${+S.season - 1} game.` : ""} ⚔️ Rivalry head-to-head counts every game between the two franchises, including playoff, placement and Toilet Bowl games.</p>`;
+      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `${schLiveNote(S)} Later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team. 🔒 Trades lock after Week ${S.tradeDeadline}.${S.rematch ? ` 🔁 Week 1 replays each team's final ${+S.season - 1} game.` : ""} ⚔️ Rivalry head-to-head counts every game between the two franchises, including playoff, placement and Toilet Bowl games.</p>`;
   }
 
   function render() {

@@ -161,10 +161,24 @@ tr.me td { background: rgba(var(--accent-rgb),.07); }
 .matchup { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; }
 .mrow { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
 .mrow + .mrow { border-top: 1px solid var(--line); }
-.mrow .team { flex: 1; }
+.mrow .team { flex: 1; min-width: 0; }
 .mrow .score { font: 24px/1 var(--display); letter-spacing: .5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .mrow.lead .score { color: var(--accent); }
 .mrow.lead .team-name::after { content: " ◂"; color: var(--accent); font-size: 11px; }
+/* Matchup sections: per-matchup Upcoming / Live / Final */
+.pill.final { color: var(--gold); border-color: rgba(230, 196, 135, .45); }
+.mu-sec + .mu-sec { margin-top: 16px; }
+.mu-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; font: 20px/1 var(--display); letter-spacing: 1px; }
+.mu-h .small { font: 600 12px/1 var(--body); letter-spacing: 0; }
+.m-top { display: flex; justify-content: flex-end; padding-top: 6px; margin-bottom: -4px; }
+.mscore { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; text-align: right; }
+.matchup.st-final .mrow.lead .score::after { content: " W"; font: 800 11px/1 var(--body); color: var(--accent); vertical-align: middle; }
+.m-left { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.matchup.st-live { border-color: rgba(111, 181, 68, .55); }
+.matchup.st-upcoming .score { color: var(--muted); opacity: .6; }
+.tx-claims { margin-top: 3px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.claims { font: 800 10.5px/1 var(--body); letter-spacing: .4px; text-transform: uppercase; padding: 3px 6px; border-radius: 5px;
+  background: var(--chip-waiver-bg); color: var(--chip-waiver-ink); }
 
 /* ---------- Transactions ---------- */
 .tx { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
@@ -509,6 +523,8 @@ tr.sched-tb td { background: rgba(255, 122, 92, .06); }
 .sc-side .avatar { width: 38px; height: 38px; }
 .sc-pts { font: 26px/1 var(--display); letter-spacing: .5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
 .sc-side.win .sc-pts { color: var(--accent); }
+.sc-pts:has(.m-left) { flex-wrap: wrap; justify-content: flex-end; row-gap: 3px; }
+.sc-pts .m-left { flex-basis: 100%; text-align: right; font: 600 10.5px/1.2 var(--body); letter-spacing: 0; }
 .sc-side.win .team-name { color: var(--text); }
 .sc-side.lose .team-name, .sc-side.lose .avatar { opacity: .7; }
 .sc-side .res { font-size: 10px; }
@@ -729,6 +745,11 @@ footer .inner { max-width: 1180px; margin: 0 auto; padding: 18px 20px; display: 
   td .team-name, .pr-row .team-name { white-space: normal; overflow: visible; }
   td .avatar { width: 26px; height: 26px; }
   td.rank { width: 22px; font-size: 17px; }
+  /* History season table: fit 390px phones without sideways scrolling */
+  #season-table table { font-size: 12px; }
+  #season-table td.rank { width: 16px; font-size: 15px; }
+  #season-table td, #season-table th { padding-left: 3px; padding-right: 3px; }
+  #season-table td:not(.num), #season-table td:not(.num) * { white-space: normal; overflow-wrap: anywhere; }
   /* Constitution scoring tables: let long values wrap instead of crushing the label */
   .rules table td:last-child { white-space: normal; max-width: 48%; }
   /* Pick ownership: stack each team as a block (team, then one row per season) */

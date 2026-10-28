@@ -8,7 +8,7 @@ boot(async () => {
   let S = seasons.find((x) => x.season === q.get("season")) || seasons[0];
   let wk = +q.get("week") || (S === seasons[0] ? currentWeek : S.W + 2);
 
-  const weekOpts = () => { ws.innerHTML = S.weeks.map((w) => `<option value="${w.wk}">${w.playoff ? `Wk ${w.wk} · ${["Playoffs Rd 1", "Semifinals", "Championship"][w.round - 1]}` : `Week ${w.wk}`}${!S.complete && w.wk === S.liveWeek ? " (live)" : ""}${(w.special || []).map((x) => ` · ${x.tag}`).join("")}</option>`).join(""); };
+  const weekOpts = () => { ws.innerHTML = S.weeks.map((w) => `<option value="${w.wk}">${w.playoff ? `Wk ${w.wk} · ${["Playoffs Rd 1", "Semifinals", "Championship"][w.round - 1]}` : `Week ${w.wk}`}${!S.complete && w.wk === S.liveWeek ? (w.status === "live" ? " (live)" : w.status === "upcoming" ? " (up next)" : " (this week)") : ""}${(w.special || []).map((x) => ` · ${x.tag}`).join("")}</option>`).join(""); };
   const clamp = () => { const max = S.weeks[S.weeks.length - 1].wk; wk = Math.min(Math.max(1, wk), max); };
   const go = (push = true) => {
     clamp();
@@ -30,7 +30,7 @@ boot(async () => {
     return `<div class="sc-side ${win ? "win" : ""} ${lose ? "lose" : ""}">
       <img class="avatar" src="${avatarUrl(o.avatar)}" alt="" loading="lazy">
       <div class="team-names"><span class="team-name"><a class="tlink" href="${schTeamHref(rid)}">${esc(schName(S, rid))}</a></span><span class="owner">@${esc(o.name || "?")}</span></div>
-      <div class="sc-pts">${g.status === "upcoming" ? "–" : fmt(pts)}${win ? ' <span class="res W">W</span>' : ""}</div></div>`;
+      <div class="sc-pts">${g.status === "upcoming" ? "–" : fmt(pts)}${win ? ' <span class="res W">W</span>' : ""}${g.status === "live" && g.left ? `<span class="m-left">${schLeft(g.left[rid])}</span>` : ""}</div></div>`;
   }
 
   /* "Last meeting" line for Week 1 cards (names and score as they were that season) */
@@ -92,6 +92,6 @@ boot(async () => {
     $("#sch-grid").querySelectorAll(".sg-week").forEach((b) => b.onclick = () => { wk = +b.dataset.wk; go(); window.scrollTo({ top: $(".sch-controls").offsetTop - 80, behavior: "smooth" }); });
     $("#sch-note").innerHTML = S.complete
       ? `${specialNote()} Regular season Weeks 1–${S.W - 1}; playoffs and Toilet Bowl Weeks ${S.W}–${S.W + 2}, labeled from that season's Sleeper brackets. In the Toilet Bowl the loser advances; the highlighted side is the real scoreboard winner. Team names are as used that season; links go to the franchise (roster slot) on Team Info.`
-      : `${specialNote()} Live from Sleeper. Week ${S.liveWeek} is in progress (scores update as games finish); later weeks are unplayed. Playoff pairings appear once Week ${S.W - 1} is final.`;
+      : `${specialNote()} ${schLiveNote(S)} Later weeks are unplayed. Playoff pairings appear once Week ${S.W - 1} is final.`;
   }
 });

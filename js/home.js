@@ -1,10 +1,10 @@
-/* Home page: hero stats, live standings, this week's matchups, recent transactions */
+/* Home page: hero stats, standings, matchups (per-matchup Upcoming / Live / Final), recent moves */
 boot(async () => {
   const { league, state, teams, standings } = await loadLeague();
-  const week = state.season === league.season ? state.display_week || state.week : 1;
+  const week = currentWeek(state, league), inSeason = inLeagueSeason(state, league);
   $("#week-no").textContent = week;
   const playoffTeams = league.settings.playoff_teams || 6;
-
+  $("#playoff-pill").textContent = `Top ${playoffTeams} make playoffs`;
   /* ---- Standings ---- */
   $("#standings").innerHTML = `<table>
     <thead><tr><th></th><th>Team</th><th class="num">W-L</th><th class="num">PF</th><th class="num hide-xs">PA</th></tr></thead>
@@ -16,17 +16,46 @@ boot(async () => {
     </tbody></table>
     <p class="note">Dashed line = playoff cut (top ${playoffTeams}). Tiebreak: points for.</p>`;
 
-  /* ---- This week's matchups (and season-high score for the hero) ---- */
-  const [players, wkRows] = await Promise.all([loadPlayers(), sleeper(`/league/${LEAGUE_ID}/matchups/${week}`, { ttlMinutes: 1 })]);
-  const pairs = pairUp(wkRows);
-  // Each matchup is a two-row card: team + score per row, leader highlighted
-  $("#matchups").innerHTML = pairs.length ? pairs.map(([a, b]) => {
-    const row = (r, other) => {
-      const t = teams.get(r.roster_id), p = r.points || 0, lead = p > (other.points || 0);
-      return `<div class="mrow ${lead ? "lead" : ""}">${teamChip(t, { sub: recordStr(t.wins, t.losses, t.ties) })}<span class="score">${fmt(p)}</span></div>`;
+  /* ---- Matchups: per-matchup Upcoming / Live / Final from the NFL game feed ---- */
+  const [players, wkRows, games, prevRows] = await Promise.all([
+    loadPlayers(),
+    sleeper(`/league/${LEAGUE_ID}/matchups/${week}`, { ttlMinutes: 1 }),
+    inSeason ? loadNflWeek(league.season, week) : null,
+    inSeason && week > 1 ? sleeper(`/league/${LEAGUE_ID}/matchups/${week - 1}`, { ttlMinutes: 5 }) : null,
+  ]);
+  const curWk = inSeason ? week : 99; // out of season every listed week is final
+  const games0 = pairUp(wkRows).map(([a, b]) => ({ a, b, wk: week, ...matchupStatus(a, b, week, curWk, players, games) }));
+  const between = !!(inSeason && week > 1 && games0.length && games0.every((g) => g.status === "upcoming") && prevRows);
+  const left = (x) => !x ? "" : x.pre + x.live === 0 ? "all done"
+    : [x.pre ? `${x.pre} to play` : "", x.live ? `${x.live} live` : ""].filter(Boolean).join(" · "); // same as schLeft (schedule-data.js isn't loaded here)
+  const card = (g, showPill) => {
+    const row = (r, o) => {
+      const t = teams.get(r.roster_id), p = r.points || 0, op = o.points || 0;
+      const lead = g.status !== "upcoming" && p > op;
+      const sub = g.status === "live" && g.left ? `<span class="m-left">${left(g.left[r.roster_id])}</span>` : "";
+      return `<div class="mrow ${lead ? "lead" : ""}">${teamChip(t, { sub: recordStr(t.wins, t.losses, t.ties) })}<span class="mscore">${g.status === "upcoming" ? '<span class="score muted">–</span>' : `<span class="score">${fmt(p)}</span>`}${sub}</span></div>`;
     };
-    return `<div class="matchup">${row(a, b)}${row(b, a)}</div>`;
-  }).join("") + `<p class="note">Scores update as games are played (refresh to update).</p>` : `<p class="muted">No matchups scheduled this week.</p>`;
+    return `<div class="matchup st-${g.status}">${showPill ? `<div class="m-top">${schStatusPillMini(g.status)}</div>` : ""}${row(g.a, g.b)}${row(g.b, g.a)}</div>`;
+  };
+  const section = (title, list, wkLabel) => {
+    const st = weekStatus(list.map((g) => g.status));
+    const mixed = new Set(list.map((g) => g.status)).size > 1;
+    return `<div class="mu-sec"><h3 class="mu-h"><span>${wkLabel}</span> ${schStatusPillMini(st)} <span class="muted small">${title}</span></h3>
+      <div class="matchups">${list.map((g) => card(g, mixed)).join("")}</div></div>`;
+  };
+  let html = "", anyLive = false;
+  if (between) {
+    const prev = pairUp(prevRows).map(([a, b]) => ({ a, b, wk: week - 1, status: "final" }));
+    html = section("Last week", prev, `Week ${week - 1}`) + section("This week · no games yet", games0, `Week ${week}`);
+  } else if (games0.length) {
+    const st = weekStatus(games0.map((g) => g.status));
+    anyLive = games0.some((g) => g.status === "live");
+    html = section(st === "final" ? "All games done" : st === "upcoming" ? "No games yet" : "Scores as of page load", games0, `Week ${week}`);
+  }
+  $("#mu-title").textContent = between ? "Last Week & Up Next" : "This Week";
+  $("#matchups").innerHTML = html ? html
+    + (anyLive ? `<p class="note">Scores update as games are played (refresh to update).${games0.some((g) => g.fallback) ? " NFL game status was unavailable, so any matchup with points counts as live." : ""}</p>` : "")
+    : `<p class="muted">No matchups scheduled this week.</p>`;
 
   /* ---- Hero stats ---- */
   const done = lastCompletedWeek(state, league);
@@ -43,19 +72,26 @@ boot(async () => {
     <div class="stat"><div class="k">Commish's squad</div><div class="v">${me ? ord(standings.indexOf(me) + 1) : "–"}</div><div class="s">${me ? `${esc(me.teamName)} (${recordStr(me.wins, me.losses, me.ties)})` : ""}</div></div>`;
   /* ---- Trade deadline countdown (Sleeper settings.trade_deadline vs the current NFL week; hidden once it passes) ---- */
   const td = league.settings.trade_deadline || 11;
-  if (state.season === league.season && state.season_type === "regular" && state.week <= td) {
-    const n = td - state.week, chip = $("#deadline-chip");
+  if (inSeason && week <= td) {
+    const n = td - week, chip = $("#deadline-chip");
     chip.innerHTML = `<span class="dl-ico">🔒</span><span><b>${n === 0 ? "Trade deadline is this week" : `Trade deadline in ${n} week${n === 1 ? "" : "s"}`}</b> · trades lock after Week ${td}</span>`;
     chip.href = `schedule.html?season=${league.season}&week=${td}`;
     chip.hidden = false;
   }
   $("#home-sub").textContent = `${league.season} season · ${league.total_rosters} teams · trade deadline Week ${league.settings.trade_deadline} · playoffs start Week ${league.settings.playoff_week_start}`;
 
-  /* ---- Recent transactions (this week + last week) ---- */
-  const txWeeks = [week, week - 1].filter((w) => w >= 1);
-  const txs = (await Promise.all(txWeeks.map((w) => sleeper(`/league/${LEAGUE_ID}/transactions/${w}`, { ttlMinutes: 2 })))).flat()
-    .filter((t) => t.status === "complete")
-    .sort((a, b) => b.created - a.created).slice(0, 14);
+  /* ---- Recent moves: the last 14 days (the current Sleeper week and the two before cover it) ---- */
+  const DAYS = 14, since = Date.now() - DAYS * 864e5, ts = (t) => t.status_updated || t.created;
+  const txWeeks = [week, week - 1, week - 2].filter((w) => w >= 1);
+  const allTx = (await Promise.all(txWeeks.map((w) => sleeper(`/league/${LEAGUE_ID}/transactions/${w}`, { ttlMinutes: 2 }).catch(() => [])))).flat();
+  const txs = allTx.filter((t) => t.status === "complete" && ts(t) >= since).sort((a, b) => ts(b) - ts(a)).slice(0, 25);
+  /* Waiver claim counts: distinct teams that claimed the same player in the same waiver run
+     (same week + same processing time; Sleeper's feed includes the failed claims), winner included */
+  const claimsFor = (w) => {
+    const pid = Object.keys(w.adds || {})[0];
+    const rivals = allTx.filter((t) => t.type === "waiver" && t.leg === w.leg && t.adds && pid in t.adds && Math.abs(ts(t) - ts(w)) < 5 * 60e3);
+    return [...new Set(rivals.map((t) => t.roster_ids[0]))];
+  };
   const pl = (id) => { const p = players[id]; return p ? `${esc(p.n)} <span class="muted small">${slotPos(p)}${p.t ? " · " + p.t : ""}</span>` : `Player #${esc(id)}`; };
   const name = (rid) => esc(teams.get(rid)?.teamName || "Roster " + rid);
   const when = (ms) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -72,8 +108,12 @@ boot(async () => {
       const adds = Object.keys(t.adds || {}).map((p) => `<span class="add">+</span> ${pl(p)}`);
       const drops = Object.keys(t.drops || {}).map((p) => `<span class="drop">−</span> ${pl(p)}`);
       body = `<b>${name(rid)}</b> &nbsp;${[...adds, ...drops].join(" &nbsp; ")}`;
+      if (t.type === "waiver") {
+        const who = claimsFor(t);
+        if (who.length > 1) body += `<div class="tx-claims"><span class="claims">${who.length} claims</span> <span class="muted small">Also claimed by ${who.filter((r) => r !== rid).map(name).join(", ")}</span></div>`;
+      }
     }
-    return `<div class="tx"><span class="tx-type ${t.type}">${t.type.replace("_", " ")}</span><div style="flex:1;min-width:0">${body}</div><span class="muted small">${when(t.created)}</span></div>`;
-  }).join("") : `<p class="muted">No moves in the last two weeks. Quiet in the patch.</p>`;
+    return `<div class="tx"><span class="tx-type ${t.type}">${t.type.replace("_", " ")}</span><div style="flex:1;min-width:0">${body}</div><span class="muted small">${when(ts(t))}</span></div>`;
+  }).join("") : `<p class="muted">No moves in the last 14 days. Quiet in the patch.</p>`;
   $("#updated").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 });

@@ -1,0 +1,15 @@
+{
+  "name": "Dingleberry League",
+  "short_name": "Dingleberry",
+  "description": "Dingleberry dynasty fantasy football league: live matchups, standings, schedule and history.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a0f07",
+  "theme_color": "#1a0f07",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

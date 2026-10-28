@@ -11,7 +11,12 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dingleberry">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#1a0f07">
 <script src="js/theme.js"></script>
 </head>
@@ -28,10 +33,10 @@
 </section>
 <section class="hero" id="hero"><div class="loading">Loading…</div></section>
 <div class="grid grid-2">
-  <div class="card"><h2>Standings <span class="pill">Top 6 make playoffs</span></h2><div class="table-wrap" id="standings"><div class="loading">Loading standings…</div></div></div>
-  <div class="card"><h2>This Week <span class="pill live">Live</span></h2><div class="matchups" id="matchups"><div class="loading">Loading matchups…</div></div></div>
+  <div class="card"><h2>Standings <span class="pill" id="playoff-pill">Playoff cut</span></h2><div class="table-wrap" id="standings"><div class="loading">Loading standings…</div></div></div>
+  <div class="card"><h2 id="mu-title">This Week</h2><div id="matchups"><div class="loading">Loading matchups…</div></div></div>
 </div>
-<div class="card" style="margin-top:18px"><h2>Recent Moves <span class="pill">Last 2 weeks</span></h2><div id="transactions"><div class="loading">Loading transactions…</div></div></div>
+<div class="card" style="margin-top:18px"><h2>Recent Moves <span class="pill">Last 14 days</span></h2><div id="transactions"><div class="loading">Loading transactions…</div></div></div>
 </main>
 <script src="js/common.js"></script>
 <script src="js/home.js"></script>

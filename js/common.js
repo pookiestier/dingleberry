@@ -59,7 +59,7 @@ async function loadLeague() {
     sleeper(`/league/${LEAGUE_ID}`),
     sleeper(`/league/${LEAGUE_ID}/users`),
     sleeper(`/league/${LEAGUE_ID}/rosters`),
-    sleeper(`/state/nfl`),
+    sleeper(`/state/nfl`, { ttlMinutes: 1.5 }),
   ]);
   const userById = Object.fromEntries(users.map((u) => [u.user_id, u]));
   const teams = new Map();
@@ -93,8 +93,66 @@ function sortStandings(list) {
 function lastCompletedWeek(state, league) {
   if (league.status === "complete") return (league.settings.playoff_week_start || 15) + 2;
   if (state.season !== league.season || state.season_type !== "regular") return 0;
-  return Math.max(0, (state.week || 1) - 1);
+  return Math.max(0, currentWeek(state, league) - 1);
 }
+
+/* ---------- One "current week" rule for every page ----------
+   Sleeper's state.week flips to the next week on Tuesday. (state.display_week is the week Sleeper's own
+   app shows and lags a day or so behind, so the site never uses it.) */
+function currentWeek(state, league) {
+  const last = (league.settings.playoff_week_start || 15) + 2;
+  if (league.status === "complete" || state.season > league.season) return last;
+  if (state.season < league.season || state.season_type === "pre" || state.season_type === "off") return 1;
+  return Math.min(Math.max(1, state.week || 1), last);
+}
+const inLeagueSeason = (state, league) => league.status !== "complete" && state.season === league.season && state.season_type === "regular";
+
+/* ---------- Per-matchup game status (Upcoming / Live / Final) ----------
+   NFL game status comes from Sleeper's schedule feed (undocumented; fields week, status
+   pre_game | in_game | complete, home, away, date). A fantasy matchup is
+     Upcoming  until any starter on either team has kicked off,
+     Live      once any starter's game has started, until
+     Final     every starter's game on both teams is complete.
+   Empty slots and starters on a bye count as done. If the feed fails, fall back to "any points = Live". */
+const NFL_SCHEDULE = (season) => `https://api.sleeper.app/schedule/nfl/regular/${season}`;
+async function loadNflWeek(season, week) {
+  try {
+    const all = await getJSON(NFL_SCHEDULE(season), { ttlMinutes: 2 });
+    if (!Array.isArray(all)) return null;
+    const games = new Map();
+    for (const g of all) if (+g.week === +week && g.home && g.away) { games.set(g.home, g.status); games.set(g.away, g.status); }
+    return games.size ? games : null;
+  } catch (_) { return null; }
+}
+/* How a side's starters stand: pre = game not started, live = game in progress, done = complete/bye/empty */
+function startersProgress(row, players, games) {
+  const out = { pre: 0, live: 0, done: 0, kicked: 0 };
+  const allDone = [...games.values()].every((st) => st === "complete");
+  for (const id of row.starters || []) {
+    if (!id || id === "0") { out.done++; continue; }
+    const team = players[id] ? players[id].t : /^[A-Z]{2,3}$/.test(id) ? id : undefined; // team DEF ids are the team code
+    if (team === undefined) { if (allDone) out.done++; else out.pre++; continue; } // unknown player: assume pending until the week ends
+    const st = games.get(team);
+    if (st === "pre_game") out.pre++;
+    else if (st === "in_game") { out.live++; out.kicked++; }
+    else if (st === "complete") { out.done++; out.kicked++; }
+    else out.done++; // bye week or free agent
+  }
+  return out;
+}
+/* status of one matchup [a, b] (Sleeper matchup rows) in `week`, given the current week */
+function matchupStatus(a, b, week, curWeek, players, games) {
+  if (week < curWeek) return { status: "final" };
+  if (week > curWeek) return { status: "upcoming" };
+  if (!games || !players) return { status: (a.points || 0) > 0 || (b.points || 0) > 0 ? "live" : "upcoming", fallback: true };
+  const A = startersProgress(a, players, games), B = startersProgress(b, players, games);
+  const kicked = A.kicked + B.kicked, left = A.pre + A.live + B.pre + B.live;
+  const status = !kicked ? "upcoming" : left ? "live" : "final";
+  return { status, left: { [a.roster_id]: A, [b.roster_id]: B } };
+}
+const schStatusPillMini = (st) => st === "live" ? '<span class="pill live">Live</span>' : st === "upcoming" ? '<span class="pill">Upcoming</span>' : '<span class="pill final">Final</span>';
+/* Combine matchup statuses into one label for a week or a card */
+const weekStatus = (list) => !list.length ? "upcoming" : list.every((s) => s === "final") ? "final" : list.every((s) => s === "upcoming") ? "upcoming" : "live";
 
 /* Fetch all matchups for weeks 1..n of the current league: { week: [matchup rows] } */
 async function loadMatchups(n) {

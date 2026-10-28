@@ -53,14 +53,23 @@ async function loadSchedules() {
   const [{ league, state, teams }, history] = await Promise.all([loadLeague(), loadHistory()]);
   const W = league.settings.playoff_week_start || 15;
   const regWeeks = Array.from({ length: W - 1 }, (_, i) => i + 1);
-  const rows = await Promise.all(regWeeks.map((w) => sleeper(`/league/${LEAGUE_ID}/matchups/${w}`)));
-  const inSeason = state.season === league.season && state.season_type === "regular";
-  const liveWeek = league.status === "complete" ? 99 : inSeason ? state.week : (state.season > league.season ? 99 : 0);
+  const inSeason = inLeagueSeason(state, league);
+  /* The current week (shared rule in common.js): earlier weeks are final, later ones upcoming, and the
+     current week's games each get Upcoming / Live / Final from the NFL game feed (matchupStatus) */
+  const liveWeek = league.status === "complete" || state.season > league.season ? 99 : inSeason ? currentWeek(state, league) : 0;
+  const [rows, players, nflGames] = await Promise.all([
+    Promise.all(regWeeks.map((w) => sleeper(`/league/${LEAGUE_ID}/matchups/${w}`, { ttlMinutes: w >= liveWeek - 1 ? 1 : 5 }))),
+    inSeason ? loadPlayers() : null,
+    inSeason ? loadNflWeek(league.season, liveWeek) : null,
+  ]);
   const owners = Object.fromEntries([...teams.values()].map((t) => [t.rosterId, { name: t.owner, team: t.teamName, avatar: t.avatar }]));
   const S = { season: league.season, W, owners, complete: false, liveWeek, weeks: [] };
   regWeeks.forEach((wk, i) => {
-    const status = wk < liveWeek ? "final" : wk === liveWeek ? "live" : "upcoming";
-    const games = pairUp(rows[i]).map(([x, y]) => schGame(S, wk, x.roster_id, y.roster_id, x.points || 0, y.points || 0, { status }));
+    const games = pairUp(rows[i]).map(([x, y]) => {
+      const m = matchupStatus(x, y, wk, liveWeek, players, nflGames);
+      return schGame(S, wk, x.roster_id, y.roster_id, x.points || 0, y.points || 0, { status: m.status, left: m.left });
+    });
+    const status = wk < liveWeek ? "final" : wk > liveWeek ? "upcoming" : weekStatus(games.map((g) => g.status));
     S.weeks.push({ wk, playoff: false, games, byes: [], status });
   });
   for (let r = 1; r <= 3; r++) S.weeks.push({ wk: W + r - 1, playoff: true, round: r, games: [], byes: [], status: "upcoming", tbd: true });
@@ -123,12 +132,23 @@ async function loadSchedules() {
     }
   }
   // Default week to show: the live week during the season, otherwise the championship week
-  const currentWeek = inSeason ? Math.min(Math.max(1, state.week), W + 2) : W + 2;
-  return { league, state, teams, seasons, currentWeek, rivalries, rivalryWeek: cfg.week || 12 };
+  const openWeek = inSeason ? Math.min(liveWeek, W + 2) : W + 2;
+  return { league, state, teams, seasons, currentWeek: openWeek, rivalries, rivalryWeek: cfg.week || 12 };
 }
 
 const schRoundName = (w) => !w.playoff ? `Week ${w.wk}` : `Week ${w.wk} · ${["Playoffs Round 1", "Semifinals", "Championship"][w.round - 1]}`;
 const schStatusPill = (st) => st === "live" ? '<span class="pill live">Live</span>' : st === "upcoming" ? '<span class="pill">Upcoming</span>' : '<span class="pill final">Final</span>';
+
+/* Players-left text for a live matchup side ({pre, live, done} from startersProgress) */
+const schLeft = (x) => !x ? "" : x.pre + x.live === 0 ? "all done" : [x.pre ? `${x.pre} to play` : "", x.live ? `${x.live} live` : ""].filter(Boolean).join(" · ");
+/* One sentence about the current week for the page notes */
+function schLiveNote(S) {
+  const w = S.weeks.find((x) => x.wk === S.liveWeek);
+  if (!w) return "Live from Sleeper.";
+  if (w.status === "upcoming") return `Live from Sleeper. Week ${w.wk} is up next: no games have kicked off yet.`;
+  if (w.status === "final") return `Live from Sleeper. Week ${w.wk} is final.`;
+  return `Live from Sleeper. Week ${w.wk} is in progress (scores update as games are played; refresh to update).`;
+}
 
 /* Special-week helpers shared by the Schedule and Team Info pages */
 const SCH_SPECIAL_ICON = { rematch: "🔁", deadline: "🔒", rivalry: "⚔️" };
@@ -141,8 +161,8 @@ function schSpecialBanners(S, w, state) {
     if (x.type === "deadline") {
       text = `Trades lock after Week ${S.tradeDeadline}.`;
       if (!S.complete && state && state.season === S.season && state.season_type === "regular") {
-        const n = S.tradeDeadline - state.week;
-        if (n > 0) text += ` That's ${n} week${n === 1 ? "" : "s"} from now (current week: ${state.week}).`;
+        const n = S.tradeDeadline - S.liveWeek;
+        if (n > 0) text += ` That's ${n} week${n === 1 ? "" : "s"} from now (current week: ${S.liveWeek}).`;
         else if (n === 0) text += " That's this week: get deals done.";
         else text += " The deadline has passed.";
       }

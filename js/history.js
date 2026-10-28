@@ -97,7 +97,7 @@ boot(async () => {
     const place = s.complete ? placements(s) : null;
     const reg = regRank(s);
     const order = place ? [...reg].sort((a, b) => place[a.roster_id] - place[b.roster_id]) : reg;
-    $("#season-table").innerHTML = `<table><thead><tr><th></th><th>Manager</th><th>${place ? "Finish" : "Status"}</th><th class="num">Reg. seed</th><th class="num">W-L</th><th class="num">PF</th><th class="num hide-xs">PA</th></tr></thead><tbody>
+    $("#season-table").innerHTML = `<table><thead><tr><th></th><th>Manager</th><th>${place ? "Finish" : "Status"}</th><th class="num" title="Regular-season seed">Seed</th><th class="num">W-L</th><th class="num">PF</th><th class="num hide-xs">PA</th></tr></thead><tbody>
       ${order.map((r, i) => `<tr><td class="rank">${i + 1}</td><td>${W(s, r.roster_id)}<div class="muted small">${esc(s.owners[r.roster_id]?.team || "")}</div></td>
         <td>${place ? finishLabel(place[r.roster_id]) : '<span class="pill live">Live</span>'}</td><td class="num">${reg.indexOf(r) + 1}</td>
         <td class="num"><b>${recordStr(r.wins, r.losses, r.ties)}</b></td><td class="num">${fmt(r.fpts)}</td><td class="num hide-xs muted">${fmt(r.fpts_against)}</td></tr>`).join("")}
