@@ -78,6 +78,16 @@ boot(async () => {
     chip.href = `schedule.html?season=${league.season}&week=${td}`;
     chip.hidden = false;
   }
+  /* ---- Playoffs countdown (settings.playoff_week_start vs the shared current week; stays after the deadline chip goes) ---- */
+  const pws = league.settings.playoff_week_start || 15;
+  if (inSeason && week <= pws + 2) {
+    const n = pws - week, chip = $("#playoff-chip");
+    const round = ["Round 1", "Semifinals", "Championship"][week - pws];
+    chip.innerHTML = `<span class="dl-ico">🏆</span><span>${n > 0 ? `<b>Playoffs in ${n} week${n === 1 ? "" : "s"}</b> · start Week ${pws}`
+      : n === 0 ? `<b>Playoffs start this week</b> · Week ${pws} · Round 1` : `<b>Playoffs: Week ${week}</b> · ${round}`}</span>`;
+    chip.href = `schedule.html?season=${league.season}&week=${Math.max(week, pws)}`;
+    chip.hidden = false;
+  }
   $("#home-sub").textContent = `${league.season} season · ${league.total_rosters} teams · trade deadline Week ${league.settings.trade_deadline} · playoffs start Week ${league.settings.playoff_week_start}`;
 
   /* ---- Recent moves: the last 14 days (the current Sleeper week and the two before cover it) ---- */

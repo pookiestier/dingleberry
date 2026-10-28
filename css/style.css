@@ -606,11 +606,18 @@ tr.sp-rematch td:first-child { color: var(--sp-rematch); } tr.sp-deadline td:fir
 .deadline-chip b { color: var(--sp-deadline); }
 .deadline-chip:hover { border-color: var(--sp-deadline); }
 .deadline-chip[hidden] { display: none; }
+.hero-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.hero-chips .deadline-chip { margin-top: 0; }
+.hero-chips:not(:has(.deadline-chip:not([hidden]))) { display: none; }
+.playoff-chip { border-color: rgba(var(--sp-rematch-rgb), .6); background: rgba(var(--sp-rematch-rgb), .12); }
+.playoff-chip b { color: var(--sp-rematch); }
+.playoff-chip:hover { border-color: var(--sp-rematch); }
 @media (max-width: 640px) {
   .sp-banner { padding: 12px; gap: 10px; align-items: flex-start; }
   .sp-banner b { font-size: 22px; }
   .sp-banner span { font-size: 13px; }
   .deadline-chip { font-size: 12.5px; }
+  .hero-chips { justify-content: center; }
 }
 
 /* ---------- Rules (constitution) ---------- */
