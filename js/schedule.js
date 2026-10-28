@@ -1,7 +1,7 @@
 /* League Schedule: one week's matchups as scorecards, plus the whole season at a glance.
    Data from js/schedule-data.js (live Sleeper for the current season, history.json for 2022–2025). */
 boot(async () => {
-  const { seasons, currentWeek, state } = await loadSchedules();
+  const [{ seasons, currentWeek, state }, gotw] = await Promise.all([loadSchedules(), loadGotw()]);
   const ss = $("#sch-season"), ws = $("#sch-week");
   ss.innerHTML = seasons.map((x) => `<option value="${x.season}">${x.season}${x.complete ? "" : " (current)"}</option>`).join("");
   const q = new URLSearchParams(location.search);
@@ -49,8 +49,10 @@ boot(async () => {
     if (g.rivalry) tag = `<span class="sched-tag rival">⚔️ ${esc(g.rivalry.name)}</span>`;
     else if (g.wk === 1 && S.rematch) tag = `<span class="sched-tag rematch">🔁 Rematch</span>`;
     const margin = g.status === "final" && !g.tie ? `<span class="muted small">by ${fmt(Math.abs(g.ap - g.bp))}</span>` : g.tie ? '<span class="muted small">Tie</span>' : "";
+    const pk = gotw(S.season, g.wk, g.a, g.b);
+    if (pk) tag = `<span class="sc-tags"><a class="sched-tag gotw" href="${gotwHref(pk)}">⭐ Game of the Week</a>${tag}</span>`;
     const rivalLine = g.rivalry ? `<div class="sc-h2h">${schSeries(g.rivalry.rec, schName(S, g.a), schName(S, g.b))}${g.rivalry.rec.n ? ` <span class="muted">· ${g.rivalry.rec.n} game${g.rivalry.rec.n === 1 ? "" : "s"}</span>` : ""}</div>` : "";
-    return `<div class="card sc-card ${g.kind === "tb" ? "sc-tb" : g.label ? "sc-po" : ""} ${g.p === 1 && g.kind !== "tb" ? "sc-final" : ""} ${g.rivalry ? "sc-rival" : ""} ${g.wk === 1 && S.rematch ? "sc-rematch" : ""}">
+    return `<div class="card sc-card ${g.kind === "tb" ? "sc-tb" : g.label ? "sc-po" : ""} ${g.p === 1 && g.kind !== "tb" ? "sc-final" : ""} ${g.rivalry ? "sc-rival" : ""} ${g.wk === 1 && S.rematch ? "sc-rematch" : ""} ${pk ? "sc-gotw" : ""}">
       <div class="sc-top">${tag || `<span class="muted small">Week ${g.wk}</span>`}<span class="sc-st">${margin} ${schStatusPill(g.status)}</span></div>
       ${rivalLine}${side(g, g.a, g.ap)}${side(g, g.b, g.bp)}${g.wk === 1 ? lastMeet(g) : ""}</div>`;
   }
@@ -69,7 +71,8 @@ boot(async () => {
     const w = S.weeks.find((x) => x.wk === wk);
     $("#sch-week-title").innerHTML = `${w.playoff ? "🏆" : "🏈"} ${S.season} · ${esc(schRoundName(w))} ${schStatusPill(w.status)}`;
     $("#sch-banners").innerHTML = schSpecialBanners(S, w, state);
-    let html = w.games.map(card).join("");
+    const isG = (g) => !!gotw(S.season, g.wk, g.a, g.b);
+    let html = [...w.games.filter(isG), ...w.games.filter((g) => !isG(g))].map(card).join("");
     if (w.byes.length) html += `<div class="card sc-card sc-bye"><div class="sc-top"><span class="sched-tag po">Round 1 byes</span></div>
       ${w.byes.map((rid) => `<div class="sc-side"><img class="avatar" src="${avatarUrl(S.owners[rid]?.avatar)}" alt="" loading="lazy"><div class="team-names"><span class="team-name"><a class="tlink" href="${schTeamHref(rid)}">${esc(schName(S, rid))}</a></span><span class="owner">@${esc(S.owners[rid]?.name || "?")}</span></div><div class="sc-pts muted small">Bye</div></div>`).join("")}
       <p class="muted small">Top-2 seeds skip round 1.</p></div>`;

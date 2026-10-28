@@ -17,11 +17,12 @@ boot(async () => {
     <p class="note">Dashed line = playoff cut (top ${playoffTeams}). Tiebreak: points for.</p>`;
 
   /* ---- Matchups: per-matchup Upcoming / Live / Final from the NFL game feed ---- */
-  const [players, wkRows, games, prevRows] = await Promise.all([
+  const [players, wkRows, games, prevRows, gotw] = await Promise.all([
     loadPlayers(),
     sleeper(`/league/${LEAGUE_ID}/matchups/${week}`, { ttlMinutes: 1 }),
     inSeason ? loadNflWeek(league.season, week) : null,
     inSeason && week > 1 ? sleeper(`/league/${LEAGUE_ID}/matchups/${week - 1}`, { ttlMinutes: 5 }) : null,
+    loadGotw(),
   ]);
   const curWk = inSeason ? week : 99; // out of season every listed week is final
   const games0 = pairUp(wkRows).map(([a, b]) => ({ a, b, wk: week, ...matchupStatus(a, b, week, curWk, players, games) }));
@@ -35,13 +36,20 @@ boot(async () => {
       const sub = g.status === "live" && g.left ? `<span class="m-left">${left(g.left[r.roster_id])}</span>` : "";
       return `<div class="mrow ${lead ? "lead" : ""}">${teamChip(t, { sub: recordStr(t.wins, t.losses, t.ties) })}<span class="mscore">${g.status === "upcoming" ? '<span class="score muted">–</span>' : `<span class="score">${fmt(p)}</span>`}${sub}</span></div>`;
     };
-    return `<div class="matchup st-${g.status}">${showPill ? `<div class="m-top">${schStatusPillMini(g.status)}</div>` : ""}${row(g.a, g.b)}${row(g.b, g.a)}</div>`;
+    const pk = g.gotw, top = pk || showPill;
+    const badge = pk ? `<a class="gotw-badge" href="${gotwHref(pk)}" title="${g.status === "final" ? "Reviewed" : "Picked"} in the weekly recap">⭐ Game of the Week</a>` : "";
+    return `<div class="matchup st-${g.status}${pk ? " gotw" : ""}">${top ? `<div class="m-top">${badge}${showPill ? schStatusPillMini(g.status) : ""}</div>` : ""}${row(g.a, g.b)}${row(g.b, g.a)}</div>`;
+  };
+  /* Tag the Game of the Week (by roster_id pair) and list it first */
+  const markGotw = (list) => {
+    for (const g of list) g.gotw = gotw(league.season, g.wk, g.a.roster_id, g.b.roster_id);
+    return [...list.filter((g) => g.gotw), ...list.filter((g) => !g.gotw)];
   };
   const section = (title, list, wkLabel) => {
     const st = weekStatus(list.map((g) => g.status));
     const mixed = new Set(list.map((g) => g.status)).size > 1;
     return `<div class="mu-sec"><h3 class="mu-h"><span>${wkLabel}</span> ${schStatusPillMini(st)} <span class="muted small">${title}</span></h3>
-      <div class="matchups">${list.map((g) => card(g, mixed)).join("")}</div></div>`;
+      <div class="matchups">${markGotw(list).map((g) => card(g, mixed)).join("")}</div></div>`;
   };
   let html = "", anyLive = false;
   if (between) {

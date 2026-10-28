@@ -151,6 +151,23 @@ function matchupStatus(a, b, week, curWeek, players, games) {
   return { status, left: { [a.roster_id]: A, [b.roster_id]: B } };
 }
 const schStatusPillMini = (st) => st === "live" ? '<span class="pill live">Live</span>' : st === "upcoming" ? '<span class="pill">Upcoming</span>' : '<span class="pill final">Final</span>';
+
+/* Game of the Week picks (data/gotw.json, written alongside each recap). Matched by roster_id pair, never by
+   team name. Returns a lookup fn (season, week, ridA, ridB) -> pick | null; a missing/broken file means no picks. */
+async function loadGotw() {
+  let picks = [];
+  try { picks = (await getJSON("data/gotw.json", { ttlMinutes: 10 })).picks || []; } catch { picks = []; }
+  const by = new Map();
+  for (const p of picks) {
+    const k = `${p.season}-${p.week}`;
+    if (!by.has(k) && Array.isArray(p.roster_ids) && p.roster_ids.length === 2) by.set(k, p); // first pick per week wins
+  }
+  return (season, week, a, b) => {
+    const p = by.get(`${season}-${week}`);
+    return p && p.roster_ids.includes(+a) && p.roster_ids.includes(+b) && +a !== +b ? p : null;
+  };
+}
+const gotwHref = (p) => p && p.recap ? `power.html?recap=${encodeURIComponent(p.recap)}#recap` : "power.html#recap";
 /* Combine matchup statuses into one label for a week or a card */
 const weekStatus = (list) => !list.length ? "upcoming" : list.every((s) => s === "final") ? "final" : list.every((s) => s === "upcoming") ? "upcoming" : "live";
 

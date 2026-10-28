@@ -1,0 +1,21 @@
+{
+  "_howto": "Game of the Week picks, one entry per season + week. Matched by Sleeper roster_ids (slots 1-10, stable even when team names change); owner_ids are for reference. 'recap' is the recap that names the pick (power.html?recap=<season>-<week>). Add the next week's pick each time a recap is published.",
+  "picks": [
+    {
+      "season": "2026",
+      "week": 7,
+      "roster_ids": [8, 5],
+      "owner_ids": ["597824544996130816", "854107767974264832"],
+      "label": "Tanking for J. Smith vs. Pukaffrey",
+      "recap": "2026-7"
+    },
+    {
+      "season": "2026",
+      "week": 8,
+      "roster_ids": [3, 5],
+      "owner_ids": ["859589535099666432", "854107767974264832"],
+      "label": "Team kchris9 vs. Pukaffrey",
+      "recap": "2026-7"
+    }
+  ]
+}
