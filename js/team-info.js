@@ -18,21 +18,41 @@ boot(async () => {
   sel.onchange = () => { rid = +sel.value; history.pushState(null, "", `?team=${rid}${schedSeason !== sched.seasons[0].season ? `&season=${schedSeason}` : ""}`); render(); };
   window.onpopstate = () => { rid = fromUrl(); schedSeason = seasonFromUrl(); render(); };
   const sp = $("#sched-season");
-  sp.innerHTML = sched.seasons.map((x) => `<option value="${x.season}">${x.season}${x.complete ? "" : " (current)"}</option>`).join("");
+  sp.innerHTML = sched.seasons.map((x) => `<option value="${x.season}">${x.season}${seasonOptSuffix(x)}</option>`).join("");
   sp.onchange = () => { schedSeason = sp.value; sync(); renderSchedule(); };
+  const phase = seasonPhase(ctx.state, ctx.league);
+  const nowWeek = currentWeek(ctx.state, ctx.league);
+  const byes = phase === "live" ? await loadByeTeams(ctx.league.season, nowWeek) : null;
+  const liveInj = new Map(); // roster_id -> { at, byId }
+  const fmtTime = (d) => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   render();
 
-  /* ---- Roster (current season, from the Sleeper rosters endpoint) ---- */
+  /* ---- Roster (current season, from the Sleeper rosters endpoint) ----
+     BYE: the player's NFL team has no game in the current week (Sleeper NFL schedule feed); only while the
+     season is live. Injury tags: Sleeper injury_status, fetched fresh per player (loadLiveInjuries); until
+     that arrives (or if it fails) the data/players.json snapshot is used. */
   function renderRoster(t) {
+    const fresh = liveInj.get(t.rosterId);
+    if (!fresh) loadLiveInjuries(t.players).then((r) => {
+      liveInj.set(t.rosterId, Object.keys(r.byId).length ? r : { at: null, byId: {} });
+      if (+sel.value === t.rosterId) renderRoster(t);
+    });
     const playerRow = (id) => {
       const p = players[id];
       const pos = slotPos(p);
       const starter = t.starters.includes(id);
-      const inj = p && p.inj ? ` <span class="inj">${esc(p.inj.slice(0, 3).toUpperCase())}</span>` : "";
+      const lv = fresh && fresh.byId[id];
+      const nflTeam = lv ? lv.t : p && p.t;
+      const inj = injTag(lv ? lv.inj : p && p.inj);
+      const bye = byes && nflTeam && byes.has(nflTeam) ? `<span class="bye-tag" title="${esc(nflTeam)} is on bye in Week ${nowWeek}">BYE</span>` : "";
       return `<div class="player ${starter ? "starter" : ""}"><span class="pos ${pos}">${pos}</span>
-        <span class="pname">${p ? esc(p.n) : "Player #" + esc(id)}${starter ? ' <span class="star">★</span>' : ""}${inj}</span>
-        <span class="team-abbr">${p && p.t ? p.t : "FA"}${p && p.a ? " · " + p.a : ""}</span></div>`;
+        <span class="pname">${p ? esc(p.n) : "Player #" + esc(id)}${starter ? ' <span class="star">★</span>' : ""}${inj}${bye}</span>
+        <span class="team-abbr">${nflTeam || "FA"}${p && p.a ? " · " + p.a : ""}</span></div>`;
     };
+    const injNote = !fresh ? "Injury tags: checking Sleeper…"
+      : fresh.at ? `Injury tags live from Sleeper as of ${fmtTime(fresh.at)}`
+      : `Injury tags from the site's player snapshot (couldn't reach Sleeper)`;
+    const byeNote = byes ? ` · <span class="bye-tag">BYE</span> = NFL team off in Week ${nowWeek}` : "";
     const special = new Set([...t.taxi, ...t.reserve]);
     const active = t.players.filter((id) => !special.has(id));
     const group = (label, ids) => ids.length ? `<div class="pos-group"><div class="pos-label">${label} · ${ids.length}</div>${ids.map(playerRow).join("")}</div>` : "";
@@ -40,7 +60,7 @@ boot(async () => {
     const place = ctx.standings.findIndex((x) => x.rosterId === t.rosterId) + 1;
     $("#ti-roster").innerHTML = `<div class="ti-box-head"><h2>🏈 Roster <span class="pill">${t.players.length} players</span></h2>
         <span class="muted small">${ctx.league.season}: ${recordStr(t.wins, t.losses, t.ties)} · ${ord(place)} · ${fmt(t.pf, 1)} PF</span></div>
-      <p class="muted small ti-legend"><span class="star">★</span> = in this week's starting lineup</p>
+      <p class="muted small ti-legend"><span class="star">★</span> = in this week's starting lineup${byeNote} · <span class="inj-tag inj-q">Q</span> <span class="inj-tag inj-d">D</span> <span class="inj-tag inj-o">O</span> = Questionable, Doubtful, Out (IR, PUP, SUS, NA as listed). ${injNote}.</p>
       <div class="roster-card ti-roster">${groups}${group("Taxi squad", t.taxi)}${group("Injured reserve", t.reserve)}</div>`;
   }
 
@@ -78,7 +98,7 @@ boot(async () => {
     $("#ti-schedule-body").innerHTML = `<div class="muted small ti-sched-sum">${esc(asName)} · @${esc(S.owners[rid]?.name || "?")} · regular season ${recordStr(w, l, tie)}${left ? ` · ${left} to play` : ""}</div>
       <div class="table-wrap"><table class="sched-table"><thead><tr><th class="num">Wk</th><th>Opponent</th><th class="num">Score</th><th class="num"></th></tr></thead>
       <tbody>${rowsOut.join("")}</tbody></table></div>
-      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `${schLiveNote(S)} Later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team. 🔒 Trades lock after Week ${S.tradeDeadline}.${S.rematch ? ` 🔁 Week 1 replays each team's final ${+S.season - 1} game.` : ""} ⚔️ Rivalry head-to-head counts every game between the two franchises, including playoff, placement and Toilet Bowl games.</p>`;
+      <p class="note">${S.complete ? "Playoff and Toilet Bowl games come from that season's Sleeper brackets. In the Toilet Bowl the loser advances; W/L here is the real scoreboard result." : `${schLiveNote(S)} Later weeks are unplayed.`} The franchise is followed by its Sleeper roster slot, so seasons under a former manager show that manager's team. 🔒 Trades lock after Week ${S.tradeDeadline}.${S.rematch ? ` 🔁 Week ${S.rematchWeek} replays each team's final ${+S.season - 1} game.` : ""}${S.rivalryCount ? " ⚔️ Rivalry head-to-head counts every game between the two franchises, including playoff, placement and Toilet Bowl games." : ""}</p>`;
   }
 
   function render() {
@@ -142,7 +162,7 @@ boot(async () => {
         <td><b>${esc(seasonTeam(x.s, rid))}</b><div class="muted small">${who(ctx, x.s, rid, { link: false })}</div><div class="muted small show-xs">${fmt(x.r.fpts)} PF · ${ord(x.seed)} seed</div></td>
         <td class="num"><b>${recordStr(x.r.wins, x.r.losses, x.r.ties)}</b></td><td class="num hide-xs">${fmt(x.r.fpts)}</td><td class="num hide-xs muted">${fmt(x.r.fpts_against)}</td>
         <td class="num hide-xs">${ord(x.seed)}</td>
-        <td>${x.s.complete ? `<b>${x.inPO ? finishLabel(x.place) : `${ord(x.place)} · missed playoffs`}</b>${x.path.length ? `<div class="muted small">${x.path.join(", ")}</div>` : ""}` : `<span class="pill live">Live</span><div class="muted small">${ord(x.seed)} in the standings</div>`}</td></tr>`).join("")}
+        <td>${x.s.complete ? `<b>${x.inPO ? finishLabel(x.place) : `${ord(x.place)} · missed playoffs`}</b>${x.path.length ? `<div class="muted small">${x.path.join(", ")}</div>` : ""}` : `${seasonStatusPill(x.s)}${x.s.phase === "pre" ? "" : `<div class="muted small">${ord(x.seed)} in the standings</div>`}`}</td></tr>`).join("")}
       </tbody></table>
       <p class="note">Seed = regular-season finish (win %, then points for). Places 1–6 come from the playoff bracket; 7–10 from the regular season. Playoff record counts championship-bracket games only (not the 3rd/5th-place games). *2022 scoring ran high (charter §9.1).</p>`;
 

@@ -1,11 +1,40 @@
 {
-  "_about": "Rivalry Week config. Each rivalry is two current owners' Sleeper usernames; the site maps them to their roster slots (franchises), so a rivalry follows the franchise even if it changed hands. week = the schedule week to feature (Rivalry Week).",
-  "week": 12,
+  "_about": "Rivalry pairs. Each rivalry is two current owners' Sleeper usernames; the site maps them to their roster slots (franchises), so a rivalry follows the franchise even if it changed hands. Which week is Rivalry Week (and which seasons have one) is set in special-weeks.json.",
   "rivalries": [
-    { "name": "The U of M Alumni Bowl", "owners": ["Staveee", "kchris9"] },
-    { "name": "The Dirty Water Duel", "owners": ["ScottEvjen", "mhalling17"] },
-    { "name": "The Honkey Brawl", "owners": ["Wyattdeterman", "boettcher19"] },
-    { "name": "The Parker Bowl", "owners": ["ParkerEvjen", "Piorkowski11"] },
-    { "name": "The Wi Tu Dum Ramen Bowl", "owners": ["VanillaRice12", "rudedog12"] }
+    {
+      "name": "The U of M Alumni Bowl",
+      "owners": [
+        "Staveee",
+        "kchris9"
+      ]
+    },
+    {
+      "name": "The Dirty Water Duel",
+      "owners": [
+        "ScottEvjen",
+        "mhalling17"
+      ]
+    },
+    {
+      "name": "The Honkey Brawl",
+      "owners": [
+        "Wyattdeterman",
+        "boettcher19"
+      ]
+    },
+    {
+      "name": "The Parker Bowl",
+      "owners": [
+        "ParkerEvjen",
+        "Piorkowski11"
+      ]
+    },
+    {
+      "name": "The Wi Tu Dum Ramen Bowl",
+      "owners": [
+        "VanillaRice12",
+        "rudedog12"
+      ]
+    }
   ]
 }

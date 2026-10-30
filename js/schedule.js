@@ -3,7 +3,7 @@
 boot(async () => {
   const [{ seasons, currentWeek, state }, gotw] = await Promise.all([loadSchedules(), loadGotw()]);
   const ss = $("#sch-season"), ws = $("#sch-week");
-  ss.innerHTML = seasons.map((x) => `<option value="${x.season}">${x.season}${x.complete ? "" : " (current)"}</option>`).join("");
+  ss.innerHTML = seasons.map((x) => `<option value="${x.season}">${x.season}${seasonOptSuffix(x)}</option>`).join("");
   const q = new URLSearchParams(location.search);
   let S = seasons.find((x) => x.season === q.get("season")) || seasons[0];
   let wk = +q.get("week") || (S === seasons[0] ? currentWeek : S.W + 2);
@@ -47,20 +47,20 @@ boot(async () => {
   function card(g) {
     let tag = g.label ? `<span class="sched-tag ${g.kind === "tb" ? "tb" : "po"}">${esc(g.label)}</span>` : "";
     if (g.rivalry) tag = `<span class="sched-tag rival">⚔️ ${esc(g.rivalry.name)}</span>`;
-    else if (g.wk === 1 && S.rematch) tag = `<span class="sched-tag rematch">🔁 Rematch</span>`;
+    else if (S.rematch && g.wk === S.rematchWeek) tag = `<span class="sched-tag rematch">🔁 Rematch</span>`;
     const margin = g.status === "final" && !g.tie ? `<span class="muted small">by ${fmt(Math.abs(g.ap - g.bp))}</span>` : g.tie ? '<span class="muted small">Tie</span>' : "";
     const pk = gotw(S.season, g.wk, g.a, g.b);
     if (pk) tag = `<span class="sc-tags"><a class="sched-tag gotw" href="${gotwHref(pk)}">⭐ Game of the Week</a>${tag}</span>`;
     const rivalLine = g.rivalry ? `<div class="sc-h2h">${schSeries(g.rivalry.rec, schName(S, g.a), schName(S, g.b))}${g.rivalry.rec.n ? ` <span class="muted">· ${g.rivalry.rec.n} game${g.rivalry.rec.n === 1 ? "" : "s"}</span>` : ""}</div>` : "";
-    return `<div class="card sc-card ${g.kind === "tb" ? "sc-tb" : g.label ? "sc-po" : ""} ${g.p === 1 && g.kind !== "tb" ? "sc-final" : ""} ${g.rivalry ? "sc-rival" : ""} ${g.wk === 1 && S.rematch ? "sc-rematch" : ""} ${pk ? "sc-gotw" : ""}">
+    return `<div class="card sc-card ${g.kind === "tb" ? "sc-tb" : g.label ? "sc-po" : ""} ${g.p === 1 && g.kind !== "tb" ? "sc-final" : ""} ${g.rivalry ? "sc-rival" : ""} ${S.rematch && g.wk === S.rematchWeek ? "sc-rematch" : ""} ${pk ? "sc-gotw" : ""}">
       <div class="sc-top">${tag || `<span class="muted small">Week ${g.wk}</span>`}<span class="sc-st">${margin} ${schStatusPill(g.status)}</span></div>
-      ${rivalLine}${side(g, g.a, g.ap)}${side(g, g.b, g.bp)}${g.wk === 1 ? lastMeet(g) : ""}</div>`;
+      ${rivalLine}${side(g, g.a, g.ap)}${side(g, g.b, g.bp)}${S.rematch && g.wk === S.rematchWeek ? lastMeet(g) : ""}</div>`;
   }
 
   function specialNote() {
-    const bits = [`🔒 Trade deadline: trades lock after Week ${S.tradeDeadline} (Sleeper league setting).`];
-    bits.push(S.rematch ? `🔁 Week 1 is Rematch Week: every game repeats both teams' last game of ${+S.season - 1}.` : `Week 1 cards show each pair's last previous meeting.`);
-    bits.push(S.rivalryCount ? `⚔️ Week ${S.weeks.find((w) => w.special?.some((x) => x.type === "rivalry")).wk}: ${S.rivalryCount} rivalry game${S.rivalryCount === 1 ? "" : "s"}; the head-to-head counts every game the two franchises (roster slots) have played, including playoff, placement and Toilet Bowl games.` : `No rivalry pairings met in Week 12 this season.`);
+    const bits = [`🔒 Trades lock after Week ${S.tradeDeadline} (Sleeper league setting).`];
+    if (S.rematch) bits.push(`🔁 Week ${S.rematchWeek} is Rematch Week: every game repeats both teams' last game of ${+S.season - 1}.`);
+    if (S.rivalryWeek) bits.push(S.rivalryCount ? `⚔️ Week ${S.rivalryWeek} is Rivalry Week: ${S.rivalryCount} rivalry game${S.rivalryCount === 1 ? "" : "s"}; the head-to-head counts every game the two franchises (roster slots) have played, including playoff, placement and Toilet Bowl games.` : `⚔️ Week ${S.rivalryWeek} is Rivalry Week, but no rivalry pairings are scheduled that week.`);
     return bits.join(" ");
   }
 

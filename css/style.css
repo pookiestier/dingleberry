@@ -112,6 +112,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 60px; }
 }
 .pill.live { color: var(--live-ink); background: var(--live); border-color: var(--live); }
 .pill.live::before { content: "● "; }
+.live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--live); margin-left: 5px; vertical-align: middle; }
 .muted { color: var(--muted); }
 .small { font-size: 12.5px; }
 .loading { color: var(--muted); padding: 20px 0; }
@@ -166,6 +167,7 @@ tr.me td { background: rgba(var(--accent-rgb),.07); }
 .mrow.lead .score { color: var(--accent); }
 .mrow.lead .team-name::after { content: " ◂"; color: var(--accent); font-size: 11px; }
 /* Matchup sections: per-matchup Upcoming / Live / Final */
+.pill.warn { color: var(--hot); border-color: var(--hot); }
 .pill.final { color: var(--gold); border-color: rgba(230, 196, 135, .45); }
 .mu-sec + .mu-sec { margin-top: 16px; }
 .mu-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; font: 20px/1 var(--display); letter-spacing: 1px; }
@@ -224,6 +226,14 @@ tr.me td { background: rgba(var(--accent-rgb),.07); }
 .player.starter .pname { font-weight: 700; }
 .player .star { color: var(--accent); font-size: 10px; }
 .inj { color: var(--hot); font-size: 11px; font-weight: 700; }
+.inj-tag, .bye-tag { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; font-size: 10px; font-weight: 800; line-height: 16px; letter-spacing: .03em; vertical-align: 1px; white-space: nowrap; }
+.inj-tag.inj-q { background: #f2c94c; color: #2a1d05; }
+.inj-tag.inj-d { background: #f2994a; color: #2a1505; }
+.inj-tag.inj-o { background: #e05a4f; color: #fff; }
+.inj-tag.inj-na { background: rgba(255, 255, 255, .14); color: var(--muted); }
+.bye-tag { background: transparent; color: var(--gold); border: 1px solid rgba(230, 196, 135, .6); line-height: 14px; }
+.ti-legend .inj-tag, .ti-legend .bye-tag { margin-left: 0; }
+.player .pname { min-width: 0; }
 
 /* ---------- Power rankings ---------- */
 .pr-row {

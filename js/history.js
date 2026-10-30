@@ -82,7 +82,7 @@ boot(async () => {
       ? `Top ${bkSeason.playoff_teams || 6} make it; seeds 1–2 get a first-round bye. Seeds follow the final regular-season standings (win %, then points for). Scores are the real matchup totals from Sleeper.`
       : `Sleeper runs the bottom four as a toilet bowl: the <b>loser</b> of each game moves on, and whoever loses the final is the last team standing. Round 1 winners play for 7th. Final standings on this site still rank places 7–10 by regular-season record.`;
   };
-  $("#bracket-season").innerHTML = bracketSeasons.map((s) => `<option value="${s.season}">${s.season}${s.complete ? "" : projected(s) ? " (projected)" : " (live)"}</option>`).join("");
+  $("#bracket-season").innerHTML = bracketSeasons.map((s) => `<option value="${s.season}">${s.season}${s.complete ? "" : projected(s) ? " (projected)" : s.phase === "live" ? " (live)" : ""}</option>`).join("");
   $("#bracket-season").value = bkSeason.season;
   $("#bracket-season").onchange = (e) => { bkSeason = bracketSeasons.find((s) => s.season === e.target.value); drawBracket(); };
   document.querySelectorAll("#bracket-kind button").forEach((b) => (b.onclick = () => { bkKind = b.dataset.k; drawBracket(); }));
@@ -99,11 +99,11 @@ boot(async () => {
     const order = place ? [...reg].sort((a, b) => place[a.roster_id] - place[b.roster_id]) : reg;
     $("#season-table").innerHTML = `<table><thead><tr><th></th><th>Manager</th><th>${place ? "Finish" : "Status"}</th><th class="num" title="Regular-season seed">Seed</th><th class="num">W-L</th><th class="num">PF</th><th class="num hide-xs">PA</th></tr></thead><tbody>
       ${order.map((r, i) => `<tr><td class="rank">${i + 1}</td><td>${W(s, r.roster_id)}<div class="muted small">${esc(s.owners[r.roster_id]?.team || "")}</div></td>
-        <td>${place ? finishLabel(place[r.roster_id]) : '<span class="pill live">Live</span>'}</td><td class="num">${reg.indexOf(r) + 1}</td>
+        <td>${place ? finishLabel(place[r.roster_id]) : seasonStatusPill(s)}</td><td class="num">${reg.indexOf(r) + 1}</td>
         <td class="num"><b>${recordStr(r.wins, r.losses, r.ties)}</b></td><td class="num">${fmt(r.fpts)}</td><td class="num hide-xs muted">${fmt(r.fpts_against)}</td></tr>`).join("")}
-      </tbody></table><p class="note">Places 1–6 come from the playoff bracket and places 7–10 from the regular season.</p>`;
+      </tbody></table>${place ? `<p class="note">Places 1–6 come from the playoff bracket and places 7–10 from the regular season.</p>` : ""}`;
   };
-  $("#season-tabs").innerHTML = seasons.map((s) => `<button data-s="${s.season}">${s.season}</button>`).join("");
+  $("#season-tabs").innerHTML = seasons.map((s) => `<button data-s="${s.season}">${s.season}${s.complete ? "" : s.phase === "live" ? ' <span class="live-dot" title="In progress"></span>' : ""}</button>`).join("");
   document.querySelectorAll("#season-tabs button").forEach((b) => (b.onclick = () => showSeason(seasons.find((s) => s.season === b.dataset.s))));
   showSeason(seasons.find((s) => s.complete) || seasons[0]);
   $("#updated").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });

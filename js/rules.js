@@ -30,6 +30,11 @@ boot(async () => {
   ];
   $("#settings-check").innerHTML = checks.map(([label, doc, live, ok]) =>
     `<li><span class="${ok ? "ok" : "warn"}">${ok ? "✓" : "!"}</span><span><b>${esc(label)}</b><br><span class="muted small">Charter: ${esc(doc)}</span></span><span>${esc(String(live))}</span></li>`).join("") +
-    `<li class="muted small" style="border:0">✓ = Sleeper matches the charter. ! = worth a look.</li>`;
+    `<li class="muted small" style="border:0">✓ = Sleeper matches the charter. ! = worth a look. Read from Sleeper when this page loaded.</li>`;
+  const off = checks.filter((c) => !c[3]).length;
+  const pill = $("#check-pill");
+  pill.textContent = off ? `${off} to review` : `✓ All ${checks.length} match`;
+  pill.className = off ? "pill warn" : "pill final";
+  pill.title = "Charter numbers compared with the league's current Sleeper settings";
   $("#updated").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 });

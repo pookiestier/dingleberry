@@ -1,0 +1,6 @@
+{
+  "_about": "Special weeks highlighted on the Schedule and Team Info pages, set per season. A season that isn't listed gets no special-week tags (past seasons stay plain; a new season shows none until it's added here). To add a season, copy the 2026 block and change the weeks; leave a key out (or set it to null) to skip that highlight. rematch_week: the week whose games replay last season's final games (cards show that last game). trade_deadline_week: the last week trades are allowed (should match the Sleeper trade deadline setting). rivalry_week: the week the rivalries in rivalries.json are featured.",
+  "seasons": {
+    "2026": { "rematch_week": 1, "trade_deadline_week": 11, "rivalry_week": 12 }
+  }
+}

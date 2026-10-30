@@ -56,14 +56,15 @@ async function loadSchedules() {
   const inSeason = inLeagueSeason(state, league);
   /* The current week (shared rule in common.js): earlier weeks are final, later ones upcoming, and the
      current week's games each get Upcoming / Live / Final from the NFL game feed (matchupStatus) */
-  const liveWeek = league.status === "complete" || state.season > league.season ? 99 : inSeason ? currentWeek(state, league) : 0;
+  const phase = seasonPhase(state, league);
+  const liveWeek = phase === "done" ? 99 : inSeason ? currentWeek(state, league) : 0;
   const [rows, players, nflGames] = await Promise.all([
     Promise.all(regWeeks.map((w) => sleeper(`/league/${LEAGUE_ID}/matchups/${w}`, { ttlMinutes: w >= liveWeek - 1 ? 1 : 5 }))),
     inSeason ? loadPlayers() : null,
     inSeason ? loadNflWeek(league.season, liveWeek) : null,
   ]);
   const owners = Object.fromEntries([...teams.values()].map((t) => [t.rosterId, { name: t.owner, team: t.teamName, avatar: t.avatar }]));
-  const S = { season: league.season, W, owners, complete: false, liveWeek, weeks: [] };
+  const S = { season: league.season, W, owners, complete: false, phase, liveWeek, weeks: [] };
   regWeeks.forEach((wk, i) => {
     const games = pairUp(rows[i]).map(([x, y]) => {
       const m = matchupStatus(x, y, wk, liveWeek, players, nflGames);
@@ -77,8 +78,13 @@ async function loadSchedules() {
   const seasons = [S, ...history.seasons.map(schBuildPast)].sort((a, b) => b.season - a.season);
   for (const x of seasons) for (const w of x.weeks) if (!w.status) w.status = "final";
 
-  /* ---- Special weeks: Rematch Week (1), Trade Deadline (settings.trade_deadline), Rivalry Week ---- */
-  const cfg = await local("data/rivalries.json").catch(() => ({ week: 12, rivalries: [] }));
+  /* ---- Special weeks (Rematch Week, Trade Deadline, Rivalry Week) come from data/special-weeks.json, per
+     season. A season that isn't listed there gets no special-week tags or highlights. ---- */
+  const [cfg, swCfg] = await Promise.all([
+    local("data/rivalries.json").catch(() => ({ rivalries: [] })),
+    local("data/special-weeks.json").catch(() => ({ seasons: {} })),
+  ]);
+  const spWeeks = (season) => (swCfg && swCfg.seasons && swCfg.seasons[season]) || {};
   const pastLeagues = await Promise.all(history.seasons.map((h) => sleeper(`/league/${h.league_id}`, { ttlMinutes: 720 }).catch(() => null)));
   const tdBySeason = { [league.season]: league.settings.trade_deadline };
   history.seasons.forEach((h, i) => { tdBySeason[h.season] = pastLeagues[i]?.settings?.trade_deadline; });
@@ -99,41 +105,47 @@ async function loadSchedules() {
   for (const x of asc) {
     const td = tdBySeason[x.season] || 11;
     x.tradeDeadline = td;
-    // Week 1: most recent previous meeting for every pairing
-    const w1 = x.weeks.find((w) => w.wk === 1);
-    for (const g of w1.games) {
+    // Rematch week (if this season has one): most recent previous meeting for every pairing
+    const w1 = x.weeks.find((w) => w.wk === spWeeks(x.season).rematch_week);
+    for (const g of w1?.games || []) {
       let last = null;
       for (const e of all) { if (e.S.season >= x.season) break; if (e.g.status === "final" && pairKey(e.g.a, e.g.b) === pairKey(g.a, g.b)) last = e; }
       g.lastMeet = last ? { season: last.S.season, wk: last.g.wk, label: last.g.label, S: last.S, g: last.g } : null;
     }
-    // Rematch Week = every Week 1 game repeats both teams' final game of the previous season
+    const sw = spWeeks(x.season);
+    x.special = sw;
+    // Rematch Week (configured seasons only): each game in that week is matched to both teams' final game of
+    // the previous season; the week is tagged when every game is a true rematch
     const prev = asc.find((p) => +p.season === +x.season - 1);
+    const rmw = sw.rematch_week ? x.weeks.find((w) => w.wk === sw.rematch_week) : null;
     let rematch = false;
-    if (prev && w1.games.length) {
+    if (rmw && prev && rmw.games.length) {
       const lastOpp = {};
       for (const w of prev.weeks) for (const g of w.games) { lastOpp[g.a] = { o: g.b, g, w }; lastOpp[g.b] = { o: g.a, g, w }; }
-      rematch = w1.games.every((g) => lastOpp[g.a]?.o === g.b && lastOpp[g.b]?.o === g.a);
-      if (rematch) for (const g of w1.games) g.rematchOf = lastOpp[g.a].g;
+      rematch = rmw.games.every((g) => lastOpp[g.a]?.o === g.b && lastOpp[g.b]?.o === g.a);
+      if (rematch) for (const g of rmw.games) g.rematchOf = lastOpp[g.a].g;
     }
     x.rematch = rematch;
+    x.rematchWeek = rematch ? rmw.wk : null;
     // Rivalry games in the configured week (matched by roster slot)
-    const rw = x.weeks.find((w) => w.wk === (cfg.week || 12));
+    const rw = sw.rivalry_week ? x.weeks.find((w) => w.wk === sw.rivalry_week) : null;
     let nRiv = 0;
     for (const g of rw?.games || []) {
       const r = rivalByPair[pairKey(g.a, g.b)];
       if (r) { nRiv++; const rec = h2h(g.a, g.b); g.rivalry = { name: r.name, rec }; }
     }
     x.rivalryCount = nRiv;
+    x.rivalryWeek = rw ? rw.wk : null;
     for (const w of x.weeks) {
       w.special = [];
-      if (w.wk === 1 && rematch) w.special.push({ type: "rematch", tag: "Rematch Week" });
-      if (w.wk === td) w.special.push({ type: "deadline", tag: "Trade Deadline" });
+      if (rematch && w === rmw) w.special.push({ type: "rematch", tag: "Rematch Week" });
+      if (sw.trade_deadline_week && w.wk === sw.trade_deadline_week) w.special.push({ type: "deadline", tag: "Trade Deadline" });
       if (w === rw && nRiv) w.special.push({ type: "rivalry", tag: "Rivalry Week", count: nRiv, of: rivalries.length });
     }
   }
   // Default week to show: the live week during the season, otherwise the championship week
   const openWeek = inSeason ? Math.min(liveWeek, W + 2) : W + 2;
-  return { league, state, teams, seasons, currentWeek: openWeek, rivalries, rivalryWeek: cfg.week || 12 };
+  return { league, state, teams, seasons, currentWeek: openWeek, rivalries };
 }
 
 const schRoundName = (w) => !w.playoff ? `Week ${w.wk}` : `Week ${w.wk} · ${["Playoffs Round 1", "Semifinals", "Championship"][w.round - 1]}`;

@@ -29,13 +29,24 @@ async function loadLeagueHistory() {
       liveHighs.push([+w, r.roster_id, pid, p.n || `Player ${pid}`, p.p || "", pts, 1]);
     });
   }
-  seasons.unshift({
-    season: league.season, league_id: LEAGUE_ID, complete: false,
+  /* Season status (common.js seasonPhase): "pre" before Week 1, "live" Week 1 through the championship
+     week, "done" after it. Once the season is over and Sleeper's bracket has a champion, the season is
+     treated as complete right away (no waiting for the next history.json snapshot). */
+  const phase = seasonPhase(state, league);
+  let wbDone = [], lbDone = [];
+  if (phase === "done") {
+    try {
+      [wbDone, lbDone] = await Promise.all([sleeper(`/league/${LEAGUE_ID}/winners_bracket`, { ttlMinutes: 10 }), sleeper(`/league/${LEAGUE_ID}/losers_bracket`, { ttlMinutes: 10 })]);
+    } catch (_) { wbDone = []; lbDone = []; }
+  }
+  const crowned = Array.isArray(wbDone) && wbDone.some((m) => m.p === 1 && m.w);
+  if (!history.seasons.some((h) => h.season === league.season)) seasons.unshift({
+    season: league.season, league_id: LEAGUE_ID, complete: crowned, phase,
     playoff_week_start: league.settings.playoff_week_start, playoff_teams: league.settings.playoff_teams,
     owners: Object.fromEntries([...teams.values()].map((t) => [t.rosterId, { name: t.owner, team: t.teamName, avatar: t.avatar }])),
     rosters: [...teams.values()].map((t) => ({ roster_id: t.rosterId, wins: t.wins, losses: t.losses, ties: t.ties, fpts: t.pf, fpts_against: t.pa })),
     matchups: Object.fromEntries(Object.entries(cur).map(([w, rows]) => [w, rows.map((r) => [r.roster_id, r.matchup_id, r.points || 0])])),
-    winners_bracket: [], losers_bracket: [], player_highs: liveHighs,
+    winners_bracket: crowned ? wbDone : [], losers_bracket: crowned ? lbDone || [] : [], player_highs: liveHighs,
   });
   seasons.sort((a, b) => b.season - a.season);
 
@@ -73,6 +84,9 @@ function placements(s) {
   for (const r of regRank(s)) if (!place[r.roster_id]) place[r.roster_id] = next++;
   return place;
 }
+/* Status pill for a season that isn't complete yet (only the current league season can be) */
+const seasonStatusPill = (s) => s.phase === "pre" ? '<span class="pill">Upcoming</span>'
+  : s.phase === "done" ? '<span class="pill final">Season over</span>' : '<span class="pill live">Live</span>';
 const finishLabel = (p) => p === 1 ? "🏆 Champion" : p === 2 ? "Runner-up" : p === 3 ? "3rd" : p <= 6 ? ord(p) + " (playoffs)" : ord(p);
 const star = (s) => (s.season === "2022" ? "*" : "");
 const wkTag = (x) => `${x.s.season}${star(x.s)} · Wk ${x.wk}${x.playoff ? " (P)" : ""}`;

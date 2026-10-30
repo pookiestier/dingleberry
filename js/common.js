@@ -89,10 +89,11 @@ function sortStandings(list) {
   return [...list].sort((a, b) => wp(b) - wp(a) || b.pf - a.pf);
 }
 
-/* The week whose scores are "done": current week minus one during the season */
+/* The week whose scores are "done": current week minus one during the season, the championship week after it */
 function lastCompletedWeek(state, league) {
-  if (league.status === "complete") return (league.settings.playoff_week_start || 15) + 2;
-  if (state.season !== league.season || state.season_type !== "regular") return 0;
+  const ph = seasonPhase(state, league);
+  if (ph === "done") return (league.settings.playoff_week_start || 15) + 2;
+  if (ph === "pre") return 0;
   return Math.max(0, currentWeek(state, league) - 1);
 }
 
@@ -105,7 +106,21 @@ function currentWeek(state, league) {
   if (state.season < league.season || state.season_type === "pre" || state.season_type === "off") return 1;
   return Math.min(Math.max(1, state.week || 1), last);
 }
-const inLeagueSeason = (state, league) => league.status !== "complete" && state.season === league.season && state.season_type === "regular";
+/* Where the current league's season stands (one rule for every "Live" / "current" label on the site):
+     "pre"  - before Week 1 (offseason, draft, NFL preseason)
+     "live" - regular season Week 1 through the championship week (playoff_week_start + 2)
+     "done" - after the championship week: Sleeper marks the league complete, state.week moves past the
+              championship week (it flips on Tuesday), or the NFL moves on to its postseason/offseason. */
+function seasonPhase(state, league) {
+  const last = (league.settings.playoff_week_start || 15) + 2;
+  if (league.status === "complete" || state.season > league.season) return "done";
+  if (state.season < league.season || state.season_type === "pre" || ["pre_draft", "drafting"].includes(league.status)) return "pre";
+  if (state.season_type === "regular") return (state.week || 1) > last ? "done" : "live";
+  return "done"; // NFL postseason/offseason of the same season = fantasy season over
+}
+/* Suffix for season dropdowns: "(live)" only while the season is actually being played */
+const seasonOptSuffix = (s) => s.complete ? "" : s.phase === "live" ? " (live)" : s.phase === "pre" ? " (upcoming)" : "";
+const inLeagueSeason = (state, league) => seasonPhase(state, league) === "live";
 
 /* ---------- Per-matchup game status (Upcoming / Live / Final) ----------
    NFL game status comes from Sleeper's schedule feed (undocumented; fields week, status
@@ -168,6 +183,46 @@ async function loadGotw() {
   };
 }
 const gotwHref = (p) => p && p.recap ? `power.html?recap=${encodeURIComponent(p.recap)}#recap` : "power.html#recap";
+/* NFL teams on bye in a week: every team in the season's NFL schedule feed that has no game that week.
+   Returns a Set of team abbreviations, or null if the feed can't be read. */
+async function loadByeTeams(season, week) {
+  try {
+    const all = await getJSON(NFL_SCHEDULE(season), { ttlMinutes: 60 });
+    if (!Array.isArray(all) || !all.length) return null;
+    const teams = new Set(), playing = new Set();
+    for (const g of all) { teams.add(g.home); teams.add(g.away); if (+g.week === +week) { playing.add(g.home); playing.add(g.away); } }
+    if (!playing.size) return null; // week not in the NFL schedule (e.g. past Week 18)
+    return new Set([...teams].filter((t) => t && !playing.has(t)));
+  } catch (_) { return null; }
+}
+
+/* Fresh injury status for a list of players. data/players.json is a snapshot, so Team Info asks Sleeper for
+   each rostered player's record (about 0.6 KB each; Sleeper's CDN refreshes them every 10 minutes) and caches
+   it for 15 minutes in the browser. Returns { at: Date fetched, byId: { id: { inj, t } } }; players that fail
+   to load are left out (the page falls back to the snapshot for them). */
+async function loadLiveInjuries(ids) {
+  const byId = {};
+  const one = async (id) => {
+    try {
+      const p = await getJSON(`https://api.sleeper.app/players/nfl/${encodeURIComponent(id)}`, { ttlMinutes: 15 });
+      if (p && typeof p === "object") byId[id] = { inj: p.injury_status || null, t: p.team || null };
+    } catch (_) { /* keep snapshot value */ }
+  };
+  const queue = [...new Set(ids)].filter((id) => /^\d+$/.test(id)); // team defenses (e.g. "BUF") have no injuries
+  await Promise.all(Array.from({ length: 6 }, async () => { while (queue.length) await one(queue.shift()); }));
+  return { at: new Date(), byId };
+}
+/* Sleeper injury_status -> compact tag */
+const INJ_TAGS = {
+  Questionable: ["Q", "q"], Doubtful: ["D", "d"], Out: ["O", "o"], IR: ["IR", "o"], PUP: ["PUP", "o"],
+  Sus: ["SUS", "o"], NA: ["NA", "na"], DNR: ["DNR", "na"], COV: ["COV", "o"],
+};
+function injTag(status) {
+  if (!status) return "";
+  const [abbr, cls] = INJ_TAGS[status] || [String(status).slice(0, 3).toUpperCase(), "na"];
+  return `<span class="inj-tag inj-${cls}" title="${esc(status)}">${esc(abbr)}</span>`;
+}
+
 /* Combine matchup statuses into one label for a week or a card */
 const weekStatus = (list) => !list.length ? "upcoming" : list.every((s) => s === "final") ? "final" : list.every((s) => s === "upcoming") ? "upcoming" : "live";
 
