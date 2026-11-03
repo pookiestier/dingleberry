@@ -4,18 +4,44 @@
     {
       "season": "2026",
       "week": 7,
-      "roster_ids": [8, 5],
-      "owner_ids": ["597824544996130816", "854107767974264832"],
+      "roster_ids": [
+        8,
+        5
+      ],
+      "owner_ids": [
+        "597824544996130816",
+        "854107767974264832"
+      ],
       "label": "Tanking for J. Smith vs. Pukaffrey",
       "recap": "2026-7"
     },
     {
       "season": "2026",
       "week": 8,
-      "roster_ids": [3, 5],
-      "owner_ids": ["859589535099666432", "854107767974264832"],
+      "roster_ids": [
+        3,
+        5
+      ],
+      "owner_ids": [
+        "859589535099666432",
+        "854107767974264832"
+      ],
       "label": "Team kchris9 vs. Pukaffrey",
       "recap": "2026-7"
+    },
+    {
+      "season": "2026",
+      "week": 9,
+      "roster_ids": [
+        5,
+        7
+      ],
+      "owner_ids": [
+        "854107767974264832",
+        "832463591750868992"
+      ],
+      "label": "Pukaffrey vs. T-Time",
+      "recap": "2026-8"
     }
   ]
 }
