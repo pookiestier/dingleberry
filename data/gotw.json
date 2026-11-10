@@ -42,6 +42,20 @@
       ],
       "label": "Pukaffrey vs. T-Time",
       "recap": "2026-8"
+    },
+    {
+      "season": "2026",
+      "week": 10,
+      "roster_ids": [
+        4,
+        10
+      ],
+      "owner_ids": [
+        "854100239546724352",
+        "864750994595102720"
+      ],
+      "label": "CTE & Felonies vs. Saquon McConkey",
+      "recap": "2026-9"
     }
   ]
 }
