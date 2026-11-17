@@ -56,6 +56,20 @@
       ],
       "label": "CTE & Felonies vs. Saquon McConkey",
       "recap": "2026-9"
+    },
+    {
+      "season": "2026",
+      "week": 11,
+      "roster_ids": [
+        4,
+        7
+      ],
+      "owner_ids": [
+        "854100239546724352",
+        "832463591750868992"
+      ],
+      "label": "CTE & Felonies vs. T-Time",
+      "recap": "2026-10"
     }
   ]
 }
